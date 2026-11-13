@@ -3,6 +3,9 @@
 #include <iostream>
 #include <string>
 
+// Forward Declaration
+class CommandProcessor;
+
 // GameEngine class implementation
 class GameEngine {
 public:
@@ -31,12 +34,28 @@ public:
     bool isFinished() const;
     // move the engine to a new state (used with the CommandProcessor)
     void transition(State newState);
+
+    void startupPhase(CommandProcessor* processor);
+    int getReinforcementPool(Player* player) const;
+    bool loadMap(const std::string& filename);
+    bool validateMap();
+    bool addPlayer(const std::string& name);
+    bool gameStart();
+
+    Map* getMap() const;
+    std::vector<Player*> getPlayers() const;
+    Deck* getDeck() const;
     // print the current state
     friend std::ostream& operator<<(std::ostream& out, const GameEngine& engine);
 
 private:
     State* currentState;
     static std::string stateName(State state);
+    Map* gameMap;
+    std::vector<Player*>* players;
+    Deck* deck;
+    MapLoader* mapLoader;
+    std::vector<int>* reinforcementPools;
     // store the next state in result
     bool nextState(const std::string& command, State& result) const;
 };
