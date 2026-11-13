@@ -116,6 +116,7 @@ Deck::Deck() : cards(new std::vector<Card*>()) {
     for (CardType type : {CardType::Bomb, CardType::Reinforcement, CardType::Blockade, CardType::Airlift, CardType::Diplomacy}) {
         cards->push_back(new Card(type));
         cards->push_back(new Card(type));
+        cards->push_back(new Card(type));
     }
 }
 
