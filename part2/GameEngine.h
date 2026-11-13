@@ -2,6 +2,10 @@
 #define GAMEENGINE_H
 #include <iostream>
 #include <string>
+#include <vector>
+#include "Map.h"
+#include "Player.h"
+#include "Cards.h"
 
 // Forward Declaration
 class CommandProcessor;
