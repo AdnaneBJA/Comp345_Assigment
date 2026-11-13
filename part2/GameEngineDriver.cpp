@@ -1,50 +1,44 @@
 #include "GameEngine.h"
+#include "CommandProcessing.h"
 #include <iostream>
-#include <string>
 
-// Demonstrating the Game Engine states with some console commands
 int main() {
-    // Create the engine
     GameEngine engine;
-
-    std::cout << "--- COMP 345 Warzone Game Engine ---\n";
-    std::cout << "Enter commands from the assignment's state diagram.\n";
-    std::cout << "Commands: loadmap, validatemap, addplayer, assigncountries,\n"
-              << "          issueorder, endissueorders, execorder,\n"
-              << "          endexecorders, win, play, end\n";
-    std::cout << "Type 'status' to display the state or 'help' to see commands.\n";
-    std::cout << "Type 'quit' to stop the driver without a game transition.\n\n";
-
-    // Store commmand by the user
-    std::string command;
-
-    // Asking for commands with a loop until the engine reaches the End state
-    while (!engine.isFinished()) {
-
-        std::cout << "[" << engine.getStateName() << "] > ";
-        if (!std::getline(std::cin, command)) {
-            break;
-        }
-        if (command == "quit") {
-            std::cout << "Driver stopped.\n";
-            break;
-        }
-        if (command == "status") {
-            std::cout << engine << "\n";
-            continue;
-        }
-        if (command == "help") {
-            std::cout << "Commands: loadmap, validatemap, addplayer, assigncountries,\n"
-                      << "issueorder, endissueorders, execorder, endexecorders,\n"
-                      << "win, play, end\n";
-            continue;
-        }
-        engine.processCommand(command);
+    int choice;
+    // Display command options between console and file
+    std::cout << "Testing Game Startup\n";
+    std::cout << "1. Console commands\n";
+    std::cout << "2. File commands\n";
+    std::cout << "Choose an option: ";
+    std::cin >> choice;
+    // Read commands from console
+    if (choice == 1) {
+        CommandProcessor processor;
+        engine.startupPhase(&processor);
     }
+    // Read command from a file
+    else if (choice == 2) {
+        FileCommandProcessorAdapter processor("Commands.txt");
 
-    // Confirming that the engine reached the End
-    if (engine.isFinished()) {
-        std::cout << "Game ended.\n";
+        if (!processor.isFileOpen()) {
+            std::cout << "Could not open Commands.txt\n";
+            return 1;
+        }
+        engine.startupPhase(&processor);
     }
+    else {
+        std::cout << "Invalid option.\n";
+        return 1;
+    }
+    
+    if (engine.getState() == GameEngine::State::AssignReinforcement) {
+    std::cout << "\nFinal reinforcement pools:\n";
+    for (Player* player : engine.getPlayers()) {
+        std::cout << player->getName() << ": " << engine.getReinforcementPool(player) << " armies\n";
+        }
+    }
+    std::cout << "\nFinal state: "
+              << engine.getStateName() << "\n";
+
     return 0;
 }
