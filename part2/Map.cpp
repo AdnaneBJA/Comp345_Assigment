@@ -253,6 +253,10 @@ std::string Continent::getName() {
     return *name;
 }
 
+int Continent::getControlBonus(){
+	return *control_bonus;
+}
+
 // Adds a territory to this continent.
 void Continent::addTerritory(Territory *territory) {
     territories->push_back(territory);

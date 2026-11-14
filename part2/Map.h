@@ -85,6 +85,8 @@ public:
     int getContinentId() const;
     std::string getName();
 
+    int getControlBonus();
+
     void addTerritory(Territory* territory);
     std::vector<Territory*> getTerritories();
     void setTerritories(std::vector<Territory*> t);
