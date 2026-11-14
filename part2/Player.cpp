@@ -325,36 +325,17 @@ void Player::issueOrder(std::string orderType) {
 	else if(orderType == "negotiate"){
 
 		std::string targetPlayer;
+		std::cout << "select player to negotiate with" << std::endl;
+		std::cin >> targetPlayer;
 
+		order = new Negotiate(targetPlayer);
+		ordersOfPlayer->add(order);
+		std::cout << "order of type " << orderType << " created" << std::endl;
 
 	}
 	else{
 		std::cout << "Unknown order type: " << orderType << std::endl;
 	}
-
-//	getOrders(orderType);
-
-
-//
-//	Order* order = nullptr;
-//	if (orderType == "deploy") {
-//		order = new Deploy(3, toProtect);
-//	} else if (orderType == "advance") {
-//		order = new Advance(2, own, enemy);
-//	} else if (orderType == "bomb") {
-//		order = new Bomb(enemy);
-//	} else if (orderType == "blockade") {
-//		order = new Blockade(toProtect);
-//	} else if (orderType == "airlift") {
-//		order = new Airlift(1, own, ownLast);
-//	} else if (orderType == "negotiate") {
-//		order = new Negotiate(enemyPlayer);
-//	} else {
-//		std::cout << "Unknown order type: " << orderType << std::endl;
-//		return;
-//	}
-//
-//	ordersOfPlayer->add(order);
 }
 
 // this method adds a territory to a player and sets the territory's owner to this player

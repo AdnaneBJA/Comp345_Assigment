@@ -49,6 +49,7 @@ public:
     int calculateReinforcement(Player* player);
     void reinforcementPhase();
     void issueOrdersPhase();
+    void executeOrdersPhase();
 
     Map* getMap() const;
     std::vector<Player*> getPlayers() const;

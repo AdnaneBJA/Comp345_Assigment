@@ -47,6 +47,10 @@ int main() {
 			engine.issueOrdersPhase();
 		}
 
+		if(engine.getState() == GameEngine::State::ExecuteOrders){
+			engine.executeOrdersPhase();
+		}
+
 
     }
     else {

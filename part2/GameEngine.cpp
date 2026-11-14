@@ -386,6 +386,8 @@ void GameEngine::reinforcementPhase() {
 //////////////////////
 // Issue Order phase
 
+//this method asks each player for orders in the previously defined roud-robin order
+//It checks that the reinforcement pool is zero in order to issue any order different from "deploy"
 void GameEngine::issueOrdersPhase(){
 
 	std::cout << "Issue Orders Phase" << std::endl;
@@ -400,10 +402,9 @@ void GameEngine::issueOrdersPhase(){
 		std::cin >> playerInput;
 		std::cout <<  "\ninfo entered: " << playerInput << std::endl;
 
+		while(playerInput != "commit"){
 
-
-
-		while(playerInput != "commit" && (*reinforcementPools)[currentIndex] > 0){
+//			(*reinforcementPools)[currentIndex] = 0; only meant for testing
 
 			if((*reinforcementPools)[currentIndex] > 0 && playerInput != "deploy"){
 				std::cout << "please deploy all available armies before entering another order" << std::endl;
@@ -415,18 +416,40 @@ void GameEngine::issueOrdersPhase(){
 				std::cout << "enter order: " << std::endl;
 				std::cin >> playerInput;
 			}
-
-
-
 		}
-
 		currentIndex++;
 	}
 
+	transition(State::ExecuteOrders);
+}
+//////////////////////
+
+
+
+/////////////////////
+//Orders Execution Phase
+
+void GameEngine::executeOrdersPhase(){
+
+	std::cout << "Orders Execution Phase" << std::endl;
+	std::vector<Player*>::iterator it;
+	for(it = players->begin(); it != players->end(); it++){
+		int currentIndex =0;
+		bool listIsEmpty = false;
+		OrdersList* currentList = (*it)->getOrders();
+		while(!listIsEmpty){
+			Order* currentOrder = currentList->get(currentIndex);
+			// currentOrder.execute(); <-- Implement this
+			currentList->remove(currentIndex); // popping from front since we added to the back
+			if(currentList->size() == 0){
+				listIsEmpty = true;
+			}
+			currentIndex++;
+		}
+	}
 }
 
-
-//////////////////////
+/////////////////////
 
 // Getter methods
 Map* GameEngine::getMap() const {
