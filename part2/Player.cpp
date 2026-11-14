@@ -217,7 +217,7 @@ void Player::issueOrder(std::string orderType) {
 		std::cout << "enter target territory" << std::endl;
 		std:: cin >> targetTerr;
 
-		order = new Deploy(armiesToDeploy,targetTerr);
+		order = new Deploy(this, armiesToDeploy, findTerritory(knownTerritories(), targetTerr));
 		ordersOfPlayer->add(order);
 		std::cout << "order of type " << orderType << " created" << std::endl;
 
@@ -243,7 +243,7 @@ void Player::issueOrder(std::string orderType) {
 				std::cout << "enter destination territory" << std::endl;
 				std::cin >> destinationTerr;
 
-				order = new Advance(armiesToMove,originTerr,destinationTerr);
+				order = new Advance(this, armiesToMove, findTerritory(knownTerritories(), originTerr), findTerritory(knownTerritories(), destinationTerr));
 				ordersOfPlayer->add(order);
 				std::cout << "order of type " << orderType << " created" << std::endl;
 
@@ -269,7 +269,7 @@ void Player::issueOrder(std::string orderType) {
 				std::cout << "enter target enemy territory: ";
 				std::cin >> destinationTerr;
 
-				order = new Advance(armiesToMove,originTerr,destinationTerr);
+				order = new Advance(this, armiesToMove, findTerritory(knownTerritories(), originTerr), findTerritory(knownTerritories(), destinationTerr));
 				ordersOfPlayer->add(order);
 				std::cout << "order of type " << orderType << " created" << std::endl;
 
@@ -286,7 +286,7 @@ void Player::issueOrder(std::string orderType) {
 		printTerritories(attack);
 		std::cin >> targetTerr;
 
-		order = new Bomb(targetTerr);
+		order = new Bomb(this, findTerritory(knownTerritories(), targetTerr));
 		ordersOfPlayer->add(order);
 		std::cout << "order of type " << orderType << " created" << std::endl;
 	}
@@ -297,7 +297,7 @@ void Player::issueOrder(std::string orderType) {
 		printTerritories(defend);
 		std::cin >> targetTerr;
 
-		order = new Blockade(targetTerr);
+		order = new Blockade(this, findTerritory(knownTerritories(), targetTerr));
 		ordersOfPlayer->add(order);
 		std::cout << "order of type " << orderType << " created" << std::endl;
 	}
@@ -317,7 +317,7 @@ void Player::issueOrder(std::string orderType) {
 		printTerritories(*territoriesOfPlayer);
 		std::cin >> targetTerr;
 
-		order = new Airlift(armiestoMove,originTerr,targetTerr);
+		order = new Airlift(this, armiestoMove, findTerritory(knownTerritories(), originTerr), findTerritory(knownTerritories(), targetTerr));
 		ordersOfPlayer->add(order);
 		std::cout << "order of type " << orderType << " created" << std::endl;
 
@@ -328,7 +328,7 @@ void Player::issueOrder(std::string orderType) {
 		std::cout << "select player to negotiate with" << std::endl;
 		std::cin >> targetPlayer;
 
-		order = new Negotiate(targetPlayer);
+		order = new Negotiate(this, findPlayer(targetPlayer));
 		ordersOfPlayer->add(order);
 		std::cout << "order of type " << orderType << " created" << std::endl;
 
@@ -343,6 +343,54 @@ void Player::addTerritory(Territory* terr) {
 
 	territoriesOfPlayer->push_back(terr);
 	terr->setPlayer(this);
+}
+
+// removing a territory from the player, the territory itself belongs to the Map
+void Player::removeTerritory(Territory* terr) {
+
+	for (size_t i = 0; i < territoriesOfPlayer->size(); i++) {
+		if ((*territoriesOfPlayer)[i] == terr) {
+			territoriesOfPlayer->erase(territoriesOfPlayer->begin() + i);
+			return;
+		}
+	}
+}
+
+// every territory reachable from the player's territories through neighbours,
+// the map is a connected graph so this is the whole map
+std::vector<Territory*> Player::knownTerritories() {
+
+	std::vector<Territory*> found = *territoriesOfPlayer;
+	for (size_t i = 0; i < found.size(); i++) {
+		for (Territory* neighbour: found[i]->getNeighbors()) {
+			if (std::find(found.begin(), found.end(), neighbour) == found.end()) {
+				found.push_back(neighbour);
+			}
+		}
+	}
+	return found;
+}
+
+// finding a territory by name in a list, NULL if it is not there
+Territory* Player::findTerritory(const std::vector<Territory*>& inputList, std::string name) {
+
+	for (Territory* terr: inputList) {
+		if (terr->getName() == name) {
+			return terr;
+		}
+	}
+	return NULL;
+}
+
+// finding a player by name among the owners of the known territories, NULL if not found
+Player* Player::findPlayer(std::string name) {
+
+	for (Territory* terr: knownTerritories()) {
+		if (terr->getPlayer() != NULL && terr->getPlayer()->getName() == name) {
+			return terr->getPlayer();
+		}
+	}
+	return NULL;
 }
 
 // print a list of territories with their armies

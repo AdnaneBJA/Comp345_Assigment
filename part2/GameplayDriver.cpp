@@ -63,5 +63,8 @@ int main() {
 
     std::cout << "\nFinal state: " << engine.getStateName() << "\n";
 
+    // free the Neutral player and the shared order lists
+    Order::cleanup();
+
     return 0;
 }

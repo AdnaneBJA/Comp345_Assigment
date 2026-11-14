@@ -43,6 +43,14 @@ class Player {
 		// adding a territory to the player
 		void addTerritory(Territory* terr);
 
+		// removing a territory from the player, used when an order changes the owner
+		void removeTerritory(Territory* terr);
+
+		// lookups by name for issueOrder, NULL if not found
+		std::vector<Territory*> knownTerritories();
+		static Territory* findTerritory(const std::vector<Territory*>& inputList, std::string name);
+		Player* findPlayer(std::string name);
+
 		// printing a list of territories to the console
 		static void printTerritories(const std::vector<Territory*>& inputList);
 

@@ -429,24 +429,51 @@ void GameEngine::issueOrdersPhase(){
 /////////////////////
 //Orders Execution Phase
 
+// Executes every order round-robin, one order per player per round,
+// all deploy orders first, then the rest from the top of each list
 void GameEngine::executeOrdersPhase(){
 
 	std::cout << "Orders Execution Phase" << std::endl;
-	std::vector<Player*>::iterator it;
-	for(it = players->begin(); it != players->end(); it++){
-		int currentIndex =0;
-		bool listIsEmpty = false;
-		OrdersList* currentList = (*it)->getOrders();
-		while(!listIsEmpty){
-			Order* currentOrder = currentList->get(currentIndex);
-			// currentOrder.execute(); <-- Implement this
-			currentList->remove(currentIndex); // popping from front since we added to the back
-			if(currentList->size() == 0){
-				listIsEmpty = true;
+
+	// the deck used to give a card to a player who conquers a territory
+	Order::setDeck(deck);
+
+	// deploy orders first, each player executes its next deploy in turn
+	bool deployLeft = true;
+	while(deployLeft){
+		deployLeft = false;
+		for(Player* player : *players){
+			OrdersList* currentList = player->getOrders();
+			for(int i = 0; i < currentList->size(); i++){
+				if(currentList->get(i)->getName() == "Deploy"){
+					currentList->get(i)->execute();
+					std::cout << *currentList->get(i) << std::endl;
+					currentList->remove(i);
+					deployLeft = true;
+					break;
+				}
 			}
-			currentIndex++;
 		}
 	}
+
+	// then every other order, each player executes the top of its list in turn
+	bool orderLeft = true;
+	while(orderLeft){
+		orderLeft = false;
+		for(Player* player : *players){
+			OrdersList* currentList = player->getOrders();
+			if(currentList->size() > 0){
+				currentList->get(0)->execute();
+				std::cout << *currentList->get(0) << std::endl;
+				currentList->remove(0);
+				orderLeft = true;
+			}
+		}
+	}
+
+	// end of turn, negotiations end and players can earn a new card next turn
+	Order::endTurn();
+	transition(State::AssignReinforcement);
 }
 
 /////////////////////

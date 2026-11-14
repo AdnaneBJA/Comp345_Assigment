@@ -5,11 +5,18 @@
 #include <string>
 #include <vector>
 
+// Forward declarations, Player.h includes this file so we cannot include it back
+class Player;
+class Territory;
+class Deck;
+
 
 // Order abstract parent of every order type
+// An order is issued by a player and validated only when it is executed
 class Order {
 public:
     Order();
+    Order(Player* issuer);
     Order(const Order& other);
     virtual ~Order();  // deleting an Order* also runs the subclass destructor
     Order& operator=(const Order& other);
@@ -22,22 +29,50 @@ public:
 
     bool isExecuted() const;
     std::string getEffect() const;
+    Player* getIssuer() const;
 
     friend std::ostream& operator<<(std::ostream& out, const Order& order);
 
+    // Game wide state shared by all orders, managed by the game engine
+    static void setDeck(Deck* deck);       // deck used to give a card after a conquest
+    static Player* getNeutralPlayer();     // created the first time it is needed
+    static void endTurn();                 // clears truces and conquests of the turn
+    static void cleanup();                 // frees the neutral player and the shared lists
+
 protected:
     void setEffect(std::string effectText);
+    void setInvalid(std::string reason);
+
+    // Why the order is invalid, empty if it is valid
+    virtual std::string invalidReason() const = 0;
+
+    // Helpers shared by the subclasses
+    static bool isAdjacent(Territory* a, Territory* b);
+    static bool hasTruce(Player* a, Player* b);
+    static void addTruce(Player* a, Player* b);
+    static void transferTerritory(Territory* territory, Player* newOwner);
+    static std::string giveConquestCard(Player* player);
+    static std::string nameOf(Territory* territory);
+    static std::string nameOf(Player* player);
 
 private:
     bool* executed;
     std::string* effect;
+    Player* issuer;  // not owned, the player who issued the order
+
+    static Deck* deck;                              // not owned
+    static Player* neutralPlayer;                   // owned, freed by cleanup
+    static std::vector<Player*>* truceFirst;        // truce pairs for this turn
+    static std::vector<Player*>* truceSecond;
+    static std::vector<Player*>* conqueredThisTurn; // players who already got their card
+    static void createLists();
 };
 
 // Deploy armies from the reinforcement pool onto one of the player's territories.
 class Deploy : public Order {
 public:
     Deploy();
-    Deploy(int armies, std::string targetTerritory);
+    Deploy(Player* issuer, int armies, Territory* targetTerritory);
     Deploy(const Deploy& other);
     ~Deploy();
     Deploy& operator=(const Deploy& other);
@@ -50,16 +85,19 @@ public:
 
     friend std::ostream& operator<<(std::ostream& out, const Deploy& order);
 
+protected:
+    std::string invalidReason() const;
+
 private:
     int* armies;
-    std::string* targetTerritory;
+    Territory* targetTerritory;  // not owned, belongs to the Map
 };
 
 // Advance move armies to a neighbouring territory, attack if enemy-owned
 class Advance : public Order {
 public:
     Advance();
-    Advance(int armies, std::string sourceTerritory, std::string targetTerritory);
+    Advance(Player* issuer, int armies, Territory* sourceTerritory, Territory* targetTerritory);
     Advance(const Advance& other);
     ~Advance();
     Advance& operator=(const Advance& other);
@@ -72,17 +110,20 @@ public:
 
     friend std::ostream& operator<<(std::ostream& out, const Advance& order);
 
+protected:
+    std::string invalidReason() const;
+
 private:
     int* armies;
-    std::string* sourceTerritory;
-    std::string* targetTerritory;
+    Territory* sourceTerritory;  // not owned
+    Territory* targetTerritory;  // not owned
 };
 
-// Bomb destroy half the armies on an enemy territory.
+// Bomb remove half the armies on an enemy territory next to the player, bomb card.
 class Bomb : public Order {
 public:
     Bomb();
-    Bomb(std::string targetTerritory);
+    Bomb(Player* issuer, Territory* targetTerritory);
     Bomb(const Bomb& other);
     ~Bomb();
     Bomb& operator=(const Bomb& other);
@@ -95,15 +136,18 @@ public:
 
     friend std::ostream& operator<<(std::ostream& out, const Bomb& order);
 
+protected:
+    std::string invalidReason() const;
+
 private:
-    std::string* targetTerritory;
+    Territory* targetTerritory;  // not owned
 };
 
-// Blockade triple armies on own territory, then it becomes neutral.
+// Blockade double armies on own territory, then it goes to the Neutral player, blockade card.
 class Blockade : public Order {
 public:
     Blockade();
-    Blockade(std::string targetTerritory);
+    Blockade(Player* issuer, Territory* targetTerritory);
     Blockade(const Blockade& other);
     ~Blockade();
     Blockade& operator=(const Blockade& other);
@@ -116,15 +160,18 @@ public:
 
     friend std::ostream& operator<<(std::ostream& out, const Blockade& order);
 
+protected:
+    std::string invalidReason() const;
+
 private:
-    std::string* targetTerritory;
+    Territory* targetTerritory;  // not owned
 };
 
-// Airlift move armies between any two own territories.
+// Airlift move armies between any two own territories, airlift card.
 class Airlift : public Order {
 public:
     Airlift();
-    Airlift(int armies, std::string sourceTerritory, std::string targetTerritory);
+    Airlift(Player* issuer, int armies, Territory* sourceTerritory, Territory* targetTerritory);
     Airlift(const Airlift& other);
     ~Airlift();
     Airlift& operator=(const Airlift& other);
@@ -137,17 +184,20 @@ public:
 
     friend std::ostream& operator<<(std::ostream& out, const Airlift& order);
 
+protected:
+    std::string invalidReason() const;
+
 private:
     int* armies;
-    std::string* sourceTerritory;
-    std::string* targetTerritory;
+    Territory* sourceTerritory;  // not owned
+    Territory* targetTerritory;  // not owned
 };
 
 // Negotiate no attacks between two players this turn, diplomacy card.
 class Negotiate : public Order {
 public:
     Negotiate();
-    Negotiate(std::string targetPlayer);
+    Negotiate(Player* issuer, Player* targetPlayer);
     Negotiate(const Negotiate& other);
     ~Negotiate();
     Negotiate& operator=(const Negotiate& other);
@@ -160,8 +210,11 @@ public:
 
     friend std::ostream& operator<<(std::ostream& out, const Negotiate& order);
 
+protected:
+    std::string invalidReason() const;
+
 private:
-    std::string* targetPlayer;
+    Player* targetPlayer;  // not owned
 };
 
 // OrdersList a player's orders for the turn. Owns its orders and deletes them.
