@@ -34,6 +34,10 @@ class Player {
 		// needed methods
 		std::vector<Territory*> toDefend();
 		std::vector<Territory*> toAttack();
+		std::vector<Territory*> toAttack(std::string terr);
+		std::vector<Territory*> toDefend(std::string terr);
+
+
 		void issueOrder(std::string orderType);
 
 		// adding a territory to the player
@@ -48,6 +52,8 @@ class Player {
 		std::vector<Territory*>* territoriesOfPlayer;
 		Hand* hand;
 		OrdersList* ordersOfPlayer;
+
+
 };
 
 #endif // PLAYER_H

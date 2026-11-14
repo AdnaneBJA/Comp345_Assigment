@@ -46,6 +46,10 @@ public:
     bool addPlayer(const std::string& name);
     bool gameStart();
 
+    int calculateReinforcement(Player* player);
+    void reinforcementPhase();
+    void issueOrdersPhase();
+
     Map* getMap() const;
     std::vector<Player*> getPlayers() const;
     Deck* getDeck() const;

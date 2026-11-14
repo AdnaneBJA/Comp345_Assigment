@@ -337,6 +337,97 @@ void GameEngine::startupPhase(CommandProcessor* processor) {
     }
 }
 
+///////////
+
+// Reinforcement phase
+
+// Armies a player earns this turn
+int GameEngine::calculateReinforcement(Player* player){
+    // integer division already rounds down
+    int armies = static_cast<int>(player->getTerritories().size()) / 3;
+
+    // continent bonus: the player must own every territory of the continent
+    for (Continent* continent : gameMap->getContinents()) {
+        std::vector<Territory*> territories = continent->getTerritories();
+        if (territories.empty()) continue;
+
+        bool ownsAll = true;
+        for (Territory* t : territories) {
+            if (t->getPlayer() != player) {
+                ownsAll = false;
+                break;
+            }
+        }
+        if (ownsAll) {
+            armies += continent->getControlBonus();
+            std::cout << "player " << player->getName() << " has total control of continent " << continent->getName()
+            		<< " with bonus " << continent->getControlBonus() << std::endl;
+        }
+    }
+
+    // minimum of 3 per turn
+    if (armies < 3) armies = 3;
+    return armies;
+}
+
+// Gives every player their armies for the turn, then moves to the next state
+void GameEngine::reinforcementPhase() {
+    std::cout << "Reinforcement phase" << std::endl;
+    for (size_t i = 0; i < players->size(); i++) {
+        Player* p = (*players)[i];
+        int earned = calculateReinforcement(p);
+        (*reinforcementPools)[i] += earned;
+        std::cout << p->getName() << " earns " << earned
+                  << " armies (pool: " << (*reinforcementPools)[i] << ")\n";
+    }
+    transition(State::IssueOrders);
+}
+
+//////////////////////
+// Issue Order phase
+
+void GameEngine::issueOrdersPhase(){
+
+	std::cout << "Issue Orders Phase" << std::endl;
+	std::cout << "type: \"commit\" to end turn" << std::endl;
+	std::vector<Player*>::iterator it;
+	std::string playerInput;
+	int currentIndex=0;
+
+	for(it = players->begin(); it != players->end(); it++){
+		std::cout << "turn of player: " << (*it)->getName() << std::endl;
+		std::cout << "enter order: ";
+		std::cin >> playerInput;
+		std::cout <<  "\ninfo entered: " << playerInput << std::endl;
+
+
+
+
+		while(playerInput != "commit" && (*reinforcementPools)[currentIndex] > 0){
+
+			if((*reinforcementPools)[currentIndex] > 0 && playerInput != "deploy"){
+				std::cout << "please deploy all available armies before entering another order" << std::endl;
+				std::cout << "enter order: ";
+				std::cin >> playerInput;
+			}
+			else{
+				(*it)->issueOrder(playerInput);
+				std::cout << "enter order: " << std::endl;
+				std::cin >> playerInput;
+			}
+
+
+
+		}
+
+		currentIndex++;
+	}
+
+}
+
+
+//////////////////////
+
 // Getter methods
 Map* GameEngine::getMap() const {
     return gameMap;

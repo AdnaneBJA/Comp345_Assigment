@@ -92,19 +92,59 @@ OrdersList* Player::getOrders() const {
 }
 
 // this method returns a list of territories that need defence. If a given
-// player territory has less than 3 armies then it is added to the list
+// player territory has less than 3 armies then it is added to the list or if it borders an enemy
 std::vector<Territory*> Player::toDefend() {
 
 	std::vector<Territory*> territoriesToDefend;
 
 	for (Territory* terr: *territoriesOfPlayer) {
-		if (terr->getArmies() < 3) {
-			territoriesToDefend.push_back(terr);
+		for(Territory* terrNeighbours: terr->getNeighbors()){
+			if (terr->getArmies() < 3 || terrNeighbours->getPlayer() != this) {
+				territoriesToDefend.push_back(terr);
+				break;
+			}
 		}
+
+	}
+
+	if(territoriesToDefend.empty()){
+		std::cout << "there are no possible targets" << std::endl;
 	}
 
 	return territoriesToDefend;
 }
+
+// return territories based on adjacency. Territories returned belong to the same player
+std::vector<Territory*> Player::toDefend(std::string nameOrigin) {
+
+	std::vector<Territory*> territoriesToDefend;
+	Territory terrOrigin;
+
+	for(size_t a=0; a < (*territoriesOfPlayer).size(); a++){
+		if((*territoriesOfPlayer)[a]->getName() == nameOrigin){
+			terrOrigin = *((*territoriesOfPlayer)[a]);
+		}
+	}
+
+	std::vector<Territory*> neighbours = terrOrigin.getNeighbors();
+
+
+	for(size_t a=0; a < neighbours.size(); a++){
+		if(neighbours[a]->getPlayer() == this){
+			territoriesToDefend.push_back(neighbours[a]);
+		}
+	}
+
+	if(territoriesToDefend.empty()){
+		std::cout << "there are no possible targets" << std::endl;
+	}
+
+
+	return territoriesToDefend;
+
+
+}
+
 
 // this method checks the neighbours of each territory belonging to a player.
 // If the territory does not belong to the current player, then it is added to
@@ -121,46 +161,200 @@ std::vector<Territory*> Player::toAttack() {
 		}
 	}
 
+	if(enemyTerritoriesToAttack.empty()){
+		std::cout << "there are no possible targets" << std::endl;
+	}
+
 	return enemyTerritoriesToAttack;
+}
+
+std::vector<Territory*> Player::toAttack(std::string nameOrigin){
+
+	std::vector<Territory*> enemyTerritoriesToAttack;
+	Territory terrOrigin;
+
+	for(size_t a=0; a < (*territoriesOfPlayer).size(); a++){
+		if((*territoriesOfPlayer)[a]->getName() == nameOrigin){
+			terrOrigin = *((*territoriesOfPlayer)[a]);
+		}
+	}
+
+	std::vector<Territory*> neighbours = terrOrigin.getNeighbors();
+
+
+	for(size_t a=0; a < neighbours.size(); a++){
+		if(neighbours[a]->getPlayer() != this){
+			enemyTerritoriesToAttack.push_back(neighbours[a]);
+		}
+	}
+
+	if(enemyTerritoriesToAttack.empty()){
+		std::cout << "there are no possible targets" << std::endl;
+	}
+
+
+	return enemyTerritoriesToAttack;
+
 }
 
 // this method creates an Order object of the given type (deploy, advance, bomb,
 // blockade, airlift or negotiate) and adds it to the player's list of orders.
-// The targets are taken from toDefend() and toAttack(). An unknown type adds nothing.
+// The targets are taken from toDefend() and toAttack().
 void Player::issueOrder(std::string orderType) {
 
 	std::vector<Territory*> defend = toDefend();
 	std::vector<Territory*> attack = toAttack();
 
-	// territories the orders refer to (empty name when there is none, which makes the order invalid)
-	std::string own = territoriesOfPlayer->empty() ? "" : territoriesOfPlayer->front()->getName();
-	std::string ownLast = territoriesOfPlayer->empty() ? "" : territoriesOfPlayer->back()->getName();
-	std::string toProtect = defend.empty() ? own : defend.front()->getName();
-	std::string enemy = attack.empty() ? "" : attack.front()->getName();
-	std::string enemyPlayer = "";
-	if (!attack.empty() && attack.front()->getPlayer() != nullptr) {
-		enemyPlayer = attack.front()->getPlayer()->getName();
-	}
+	Order* order;
 
-	Order* order = nullptr;
-	if (orderType == "deploy") {
-		order = new Deploy(3, toProtect);
-	} else if (orderType == "advance") {
-		order = new Advance(2, own, enemy);
-	} else if (orderType == "bomb") {
-		order = new Bomb(enemy);
-	} else if (orderType == "blockade") {
-		order = new Blockade(toProtect);
-	} else if (orderType == "airlift") {
-		order = new Airlift(1, own, ownLast);
-	} else if (orderType == "negotiate") {
-		order = new Negotiate(enemyPlayer);
-	} else {
+	//deploy logic. asking player for input based on action
+	if(orderType == "deploy"){
+		int armiesToDeploy;
+		std::string targetTerr;
+		std::cout << "enter number of armies to deploy: ";
+		std:: cin >> armiesToDeploy;
+		printTerritories(defend);
+		std::cout << "enter target territory" << std::endl;
+		std:: cin >> targetTerr;
+
+		order = new Deploy(armiesToDeploy,targetTerr);
+		ordersOfPlayer->add(order);
+		std::cout << "order of type " << orderType << " created" << std::endl;
+
+	}
+	else if(orderType == "advance"){
+		int advanceOption;
+		std::cout << "execute a defensive move: 1" << std::endl;
+		std::cout << "execute an attacking move: 2" << std::endl;
+		std::cin >> advanceOption;
+		int armiesToMove;
+		std::string originTerr;
+		std::string destinationTerr;
+		switch(advanceOption){
+			case 1:
+			// moving towards friendly territory
+				std::cout << "enter number of armies to move: ";
+				std:: cin >> armiesToMove;
+				printTerritories(*territoriesOfPlayer);
+				std::cout << "enter origin territory" << std::endl;
+				std:: cin >> originTerr;
+				defend = toDefend(originTerr);
+				printTerritories(defend);
+				std::cout << "enter destination territory" << std::endl;
+				std::cin >> destinationTerr;
+
+				order = new Advance(armiesToMove,originTerr,destinationTerr);
+				ordersOfPlayer->add(order);
+				std::cout << "order of type " << orderType << " created" << std::endl;
+
+				break;
+			case 2:
+				// moving towards enemy territory
+				std::cout << "All possible enemy targets" << std::endl;
+				printTerritories(attack);
+				std::cout << std::endl;
+
+				std::cout << "enter number of armies to move: ";
+				std:: cin >> armiesToMove;
+				std::cout << std::endl;
+
+				printTerritories(*territoriesOfPlayer);
+				std::cout << "enter origin territory" << std::endl;
+				std:: cin >> originTerr;
+				std::cout << std::endl;
+
+				std::cout << "List of possible targets from " << originTerr << std::endl;
+				attack = toAttack(originTerr);
+				printTerritories(attack);
+				std::cout << "enter target enemy territory: ";
+				std::cin >> destinationTerr;
+
+				order = new Advance(armiesToMove,originTerr,destinationTerr);
+				ordersOfPlayer->add(order);
+				std::cout << "order of type " << orderType << " created" << std::endl;
+
+				break;
+			default:
+				std::cout << "please enter a correct option" << std::endl;
+				break;
+		}
+	}
+	else if(orderType == "bomb"){
+
+		std::string targetTerr;
+		std::cout << "select a territory to bomb" << std::endl;
+		printTerritories(attack);
+		std::cin >> targetTerr;
+
+		order = new Bomb(targetTerr);
+		ordersOfPlayer->add(order);
+		std::cout << "order of type " << orderType << " created" << std::endl;
+	}
+	else if(orderType == "blockade"){
+
+		std::string targetTerr;
+		std::cout << "select a territory to blockade" << std::endl;
+		printTerritories(defend);
+		std::cin >> targetTerr;
+
+		order = new Blockade(targetTerr);
+		ordersOfPlayer->add(order);
+		std::cout << "order of type " << orderType << " created" << std::endl;
+	}
+	else if(orderType == "airlift"){
+
+		int armiestoMove;
+		std::string originTerr;
+		std::string targetTerr;
+		std::cout << "select the amount of armies to be moved" << std::endl;
+		std::cin >> armiestoMove;
+
+		std::cout << "select a territory to airlift from" << std::endl;
+		printTerritories(*territoriesOfPlayer);
+		std::cin >> originTerr;
+
+		std::cout << "select the destination of airlift" << std::endl;
+		printTerritories(*territoriesOfPlayer);
+		std::cin >> targetTerr;
+
+		order = new Airlift(armiestoMove,originTerr,targetTerr);
+		ordersOfPlayer->add(order);
+		std::cout << "order of type " << orderType << " created" << std::endl;
+
+	}
+	else if(orderType == "negotiate"){
+
+		std::string targetPlayer;
+
+
+	}
+	else{
 		std::cout << "Unknown order type: " << orderType << std::endl;
-		return;
 	}
 
-	ordersOfPlayer->add(order);
+//	getOrders(orderType);
+
+
+//
+//	Order* order = nullptr;
+//	if (orderType == "deploy") {
+//		order = new Deploy(3, toProtect);
+//	} else if (orderType == "advance") {
+//		order = new Advance(2, own, enemy);
+//	} else if (orderType == "bomb") {
+//		order = new Bomb(enemy);
+//	} else if (orderType == "blockade") {
+//		order = new Blockade(toProtect);
+//	} else if (orderType == "airlift") {
+//		order = new Airlift(1, own, ownLast);
+//	} else if (orderType == "negotiate") {
+//		order = new Negotiate(enemyPlayer);
+//	} else {
+//		std::cout << "Unknown order type: " << orderType << std::endl;
+//		return;
+//	}
+//
+//	ordersOfPlayer->add(order);
 }
 
 // this method adds a territory to a player and sets the territory's owner to this player
@@ -174,6 +368,7 @@ void Player::addTerritory(Territory* terr) {
 void Player::printTerritories(const std::vector<Territory*>& inputList) {
 
 	for (Territory* terr: inputList) {
-		std::cout << "  " << terr->getName() << " (" << terr->getArmies() << " armies)" << std::endl;
+		std::cout << terr->getName() << ", armies: " << terr->getArmies() <<std::endl;
 	}
 }
+

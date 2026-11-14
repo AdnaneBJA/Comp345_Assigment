@@ -1,0 +1,5 @@
+loadmap src/canada.map
+validatemap
+addplayer A
+addplayer B
+gamestart
