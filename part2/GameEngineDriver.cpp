@@ -33,7 +33,7 @@ int main() {
     
     if (engine.getState() == GameEngine::State::AssignReinforcement) {
     std::cout << "\nFinal reinforcement pools:\n";
-    for (Player* player : engine.getPlayers()) {
+    for (Player* player : *engine.getPlayers()) {
         std::cout << player->getName() << ": " << engine.getReinforcementPool(player) << " armies\n";
         }
     }
