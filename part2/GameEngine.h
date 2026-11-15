@@ -41,6 +41,7 @@ public:
 
     void startupPhase(CommandProcessor* processor);
     int getReinforcementPool(Player* player) const;
+    void setReinforcementPool(Player* player, int newAmount);
     bool loadMap(const std::string& filename);
     bool validateMap();
     bool addPlayer(const std::string& name);
@@ -50,9 +51,12 @@ public:
     void reinforcementPhase();
     void issueOrdersPhase();
     void executeOrdersPhase();
+    bool checkWinCondition();
+    void checkDefeatedPlayer();
+    void endingPhase(CommandProcessor* processor);
 
     Map* getMap() const;
-    std::vector<Player*> getPlayers() const;
+    std::vector<Player*>* getPlayers() const;
     Deck* getDeck() const;
     // print the current state
     friend std::ostream& operator<<(std::ostream& out, const GameEngine& engine);

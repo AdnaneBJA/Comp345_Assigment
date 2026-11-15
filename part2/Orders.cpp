@@ -394,6 +394,7 @@ void Advance::execute() {
             + " to " + targetTerritory->getName() + ".");
         return;
     }
+    /////
 
     // Enemy territory, battle
     int defenders = targetTerritory->getArmies();

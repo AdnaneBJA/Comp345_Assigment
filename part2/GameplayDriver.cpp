@@ -11,60 +11,62 @@ int main() {
     std::cout << "2. File commands\n";
     std::cout << "Choose an option: ";
     std::cin >> choice;
-    // Read commands from console
-    if (choice == 1) {
-        CommandProcessor processor;
-        engine.startupPhase(&processor);
-    }
-    // Read command from a file
-    else if (choice == 2) {
-        FileCommandProcessorAdapter processor("src/input.txt");
 
-        if (!processor.isFileOpen()) {
-            std::cout << "Could not open Commands.txt\n";
-            return 1;
-        }
-        engine.startupPhase(&processor);
+    while(engine.getState() != GameEngine::State::End){
 
-		if (engine.getState() == GameEngine::State::AssignReinforcement) {
-		std::cout << "\nInitial reinforcement pools:\n";
+		 // Read commands from console
+		if (choice == 1) {
+			CommandProcessor processor;
+			engine.startupPhase(&processor);
+		}
+		// Read command from a file
+		else if (choice == 2) {
+			FileCommandProcessorAdapter processor("src/input.txt");
+			engine.startupPhase(&processor);
 
-		for (Player* player : engine.getPlayers()) {
-			std::cout << player->getName() << ": " << engine.getReinforcementPool(player) << " armies\n";
+			if (!processor.isFileOpen()) {
+				std::cout << "Could not open Commands.txt\n";
+				return 1;
+			}
+		}
+		else {
+			std::cout << "Invalid option.\n";
+			return 1;
+		}
+
+		while(engine.getState() != GameEngine::State::Win){
+
+
+			std::cout<<std::endl;
+
+			if(engine.getState() == GameEngine::State::AssignReinforcement){
+				engine.reinforcementPhase();
+			}
+
+			std::cout<<std::endl;
+
+
+			if(engine.getState() == GameEngine::State::IssueOrders){
+				engine.issueOrdersPhase();
+			}
+
+			if(engine.getState() == GameEngine::State::ExecuteOrders){
+				engine.executeOrdersPhase();
 			}
 		}
 
-		engine.reinforcementPhase();
-
-		std::cout<<std::endl;
-
-		std::cout << "\nFinal reinforcement pools:\n";
-		for (Player* player : engine.getPlayers()) {
-			std::cout << player->getName() << ": " << engine.getReinforcementPool(player) << " armies\n";
-			}
-
-		if(engine.getState() == GameEngine::State::IssueOrders){
-			engine.issueOrdersPhase();
+		if(engine.getState() == GameEngine::State::Win){
+			std::cout<<std::endl;
+			std::cout << "game has ended, Player " << engine.getPlayers()->front()->getName() << " has won!"<< std::endl;
+			CommandProcessor processor;
+			engine.endingPhase(&processor);
+			// free the Neutral player and the shared order lists
+			Order::cleanup();
 		}
-
-		if(engine.getState() == GameEngine::State::ExecuteOrders){
-			engine.executeOrdersPhase();
-		}
-
+		std::cout << "\nFinal state: " << engine.getStateName() << "\n";
 
     }
-    else {
-        std::cout << "Invalid option.\n";
-        return 1;
-    }
 
-
-
-
-    std::cout << "\nFinal state: " << engine.getStateName() << "\n";
-
-    // free the Neutral player and the shared order lists
-    Order::cleanup();
 
     return 0;
 }

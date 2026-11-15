@@ -8,7 +8,9 @@
 #include "Map.h"
 #include "Cards.h"
 #include "Orders.h"
+#include "GameEngine.h"
 
+class GameEngine;
 // A player of the game. A player owns a collection of territories (from Map.h),
 // a hand of cards (Hand, from Cards.h) and a list of orders (OrdersList, from
 // Orders.h). Every data member is a pointer. The player owns (and deletes) its
@@ -38,7 +40,7 @@ class Player {
 		std::vector<Territory*> toDefend(std::string terr);
 
 
-		void issueOrder(std::string orderType);
+		void issueOrder(std::string orderType,GameEngine& engine);
 
 		// adding a territory to the player
 		void addTerritory(Territory* terr);

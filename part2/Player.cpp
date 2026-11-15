@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <iostream>
 
+
 // default constructor: a player with a default name, no territories, an empty
 // hand and an empty list of orders
 Player::Player()
@@ -200,7 +201,7 @@ std::vector<Territory*> Player::toAttack(std::string nameOrigin){
 // this method creates an Order object of the given type (deploy, advance, bomb,
 // blockade, airlift or negotiate) and adds it to the player's list of orders.
 // The targets are taken from toDefend() and toAttack().
-void Player::issueOrder(std::string orderType) {
+void Player::issueOrder(std::string orderType,GameEngine& engine) {
 
 	std::vector<Territory*> defend = toDefend();
 	std::vector<Territory*> attack = toAttack();
@@ -213,10 +214,17 @@ void Player::issueOrder(std::string orderType) {
 		std::string targetTerr;
 		std::cout << "enter number of armies to deploy: ";
 		std:: cin >> armiesToDeploy;
+		int currentReinforcements = engine.getReinforcementPool(this);
+		if(armiesToDeploy > currentReinforcements){
+			std::cout << "cannot deploy more than " << currentReinforcements << " armies" << std::endl;
+			return;
+		}
+		else{
+			engine.setReinforcementPool(this, currentReinforcements-armiesToDeploy);
+		}
 		printTerritories(defend);
 		std::cout << "enter target territory" << std::endl;
 		std:: cin >> targetTerr;
-
 		order = new Deploy(this, armiesToDeploy, findTerritory(knownTerritories(), targetTerr));
 		ordersOfPlayer->add(order);
 		std::cout << "order of type " << orderType << " created" << std::endl;

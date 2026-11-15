@@ -1,4 +1,4 @@
-loadmap src/canada.map
+loadmap src/maps/square.map
 validatemap
 addplayer A
 addplayer B

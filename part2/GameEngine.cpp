@@ -398,6 +398,8 @@ void GameEngine::issueOrdersPhase(){
 
 	for(it = players->begin(); it != players->end(); it++){
 		std::cout << "turn of player: " << (*it)->getName() << std::endl;
+		std::cout << "reinforcements left: " << (*reinforcementPools)[currentIndex] << std::endl;
+		std::cout << "Current hand: " << *(*it)->getHand() << std::endl;
 		std::cout << "enter order: ";
 		std::cin >> playerInput;
 		std::cout <<  "\ninfo entered: " << playerInput << std::endl;
@@ -408,11 +410,13 @@ void GameEngine::issueOrdersPhase(){
 
 			if((*reinforcementPools)[currentIndex] > 0 && playerInput != "deploy"){
 				std::cout << "please deploy all available armies before entering another order" << std::endl;
+				std::cout << "reinforcements left: " << (*reinforcementPools)[currentIndex] << std::endl;
 				std::cout << "enter order: ";
 				std::cin >> playerInput;
 			}
 			else{
-				(*it)->issueOrder(playerInput);
+				(*it)->issueOrder(playerInput,*this);
+				std::cout << "reinforcements left: " << (*reinforcementPools)[currentIndex] << std::endl;
 				std::cout << "enter order: " << std::endl;
 				std::cin >> playerInput;
 			}
@@ -473,8 +477,95 @@ void GameEngine::executeOrdersPhase(){
 
 	// end of turn, negotiations end and players can earn a new card next turn
 	Order::endTurn();
-	transition(State::AssignReinforcement);
+
+	// check for eliminated players
+	checkDefeatedPlayer();
+	// check if winner
+	if(checkWinCondition()){
+		transition(State::Win);
+	}
+	else{
+		transition(State::AssignReinforcement);
+	}
 }
+/////////////////////
+// winning condition
+
+bool::GameEngine::checkWinCondition(){
+
+	bool winner = false;
+	Player* testPlayer;
+	Map* currentmap = getMap();
+	std::vector<Territory*> allTerritories = currentmap->getTerritories();
+	testPlayer = allTerritories.front()->getPlayer();
+	// the logic is that, we get the pointer for the player of any territory,
+	// in this case the first one, if that pointer is the same for all territories,
+	// then we can conclude that a single player owns all territories, making it the winner
+	for(size_t a=0; a < allTerritories.size(); a++){
+		if(testPlayer == allTerritories[a]->getPlayer()){
+			winner = true;
+		}
+		else{
+			winner = false;
+			break;
+		}
+	}
+	return winner;
+}
+
+
+/////////////////////
+// Checking for any eliminated player
+
+void::GameEngine::checkDefeatedPlayer(){
+
+	// check the territory vector for each player. If it is empty, remove player
+	std::vector<Player*>* currentPlayers = getPlayers();
+	std::vector<Player*>::iterator itPlayers;
+	for(itPlayers = currentPlayers->begin(); itPlayers != currentPlayers->end();){
+	    if ((*itPlayers)->getTerritories().empty()) {
+	        std::cout << "Player " << (*itPlayers)->getName() << " was eliminated" << std::endl;
+
+	        size_t index = itPlayers - players->begin();                         // position, for the pools
+	        delete *itPlayers;                                                   // free the player
+	        itPlayers = players->erase(itPlayers);                                // it now points at the next player
+	        reinforcementPools->erase(reinforcementPools->begin() + index); // keep both vectors aligned
+	    }
+	    else {
+	        ++itPlayers;                                                         // only advance when nothing was erased
+	    }
+
+	}
+
+}
+
+///////////////////////
+// ending phase
+
+void GameEngine::endingPhase(CommandProcessor* processor){
+
+	std::cout << "\nEnter a command to replay game or quit the program: " << std::endl;
+	while(getState() == State::Win){
+		Command* command = processor->getCommand();
+		// Validate command
+        if (command == nullptr) {
+            transition(State::End);
+            break;
+        }
+		if (processor->validate(command, this) && State::Start == processor->nextState(command)) {
+			*this = GameEngine();
+		}
+		else if(processor->validate(command, this) && State::End == processor->nextState(command)) {
+			transition(processor->nextState(command));
+			std::cout << "\nThank you for playing" << std::endl;
+		}
+		else{
+			std::cout << command->getEffect() << "\n";
+		}
+
+	}
+}
+
 
 /////////////////////
 
@@ -483,8 +574,8 @@ Map* GameEngine::getMap() const {
     return gameMap;
 }
 
-std::vector<Player*> GameEngine::getPlayers() const {
-    return *players;
+std::vector<Player*>* GameEngine::getPlayers() const {
+    return players;
 }
 
 Deck* GameEngine::getDeck() const {
@@ -500,3 +591,14 @@ int GameEngine::getReinforcementPool(Player* player) const {
 
     return -1;
 }
+
+void GameEngine::setReinforcementPool(Player* player, int newAmount){
+
+    for (size_t i = 0; i < players->size(); i++) {
+        if ((*players)[i] == player) {
+             (*reinforcementPools)[i] = newAmount;
+        }
+    }
+
+}
+

@@ -1,0 +1,24 @@
+; map: square.map
+; 4 territories forming a square
+
+[files]
+pic square_pic.png
+map square_map.gif
+crd square.cards
+
+[continents]
+Square_Land_top 2 red
+Square_Land_bottom 3 blue
+
+
+[countries]
+1 Top_Left 1 100 100
+2 Top_Right 1 300 100
+3 Bottom_Right 2 300 300
+4 Bottom_Left 2 100 300
+
+[borders]
+1 2 4
+2 1 3
+3 2 4
+4 3 1
