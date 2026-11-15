@@ -12,8 +12,8 @@ Command::Command(string text) {
     effect = new string("");
 }
 
-// Copy constructor: deep copy of the text and the effect
-Command::Command(const Command& other) {
+// Copy constructor: deep copy of the text and the effect, same observers
+Command::Command(const Command& other) : Subject(other), ILoggable(other) {
     command = new string(*other.command);
     effect = new string(*other.effect);
 }
@@ -24,9 +24,10 @@ Command::~Command() {
     delete effect;
 }
 
-// Assignment operator: copies the values into our own strings
+// Assignment operator: copies the values into our own strings, same observers
 Command& Command::operator=(const Command& other) {
     if (this != &other) {
+        Subject::operator=(other);
         *command = *other.command;
         *effect = *other.effect;
     }
@@ -39,9 +40,11 @@ ostream& operator<<(ostream& out, const Command& command) {
     return out;
 }
 
-// Saves the effect of the command (or the error message if it was invalid)
+// Saves the effect of the command (or the error message if it was invalid),
+// then notifies the observers so the effect is written to the log
 void Command::saveEffect(string newEffect) {
     *effect = newEffect;
+    notify(this);
 }
 
 // Getter of the command text
@@ -54,6 +57,11 @@ string Command::getEffect() const {
     return *effect;
 }
 
+// Log line written when the effect of the command is saved
+string Command::stringToLog() {
+    return "Command: \"" + *command + "\" | Effect: " + *effect;
+}
+
 // CommandProcessor
 
 // Default constructor: empty list of commands
@@ -61,8 +69,8 @@ CommandProcessor::CommandProcessor() {
     commands = new vector<Command*>();
 }
 
-// Copy constructor: deep copy of every command
-CommandProcessor::CommandProcessor(const CommandProcessor& other) {
+// Copy constructor: deep copy of every command, same observers
+CommandProcessor::CommandProcessor(const CommandProcessor& other) : Subject(other), ILoggable(other) {
     commands = new vector<Command*>();
     for (Command* c : *other.commands) {
         commands->push_back(new Command(*c));
@@ -80,6 +88,7 @@ CommandProcessor::~CommandProcessor() {
 // Assignment operator: deletes our commands, then deep copies the other ones
 CommandProcessor& CommandProcessor::operator=(const CommandProcessor& other) {
     if (this != &other) {
+        Subject::operator=(other);
         for (Command* c : *commands) {
             delete c;
         }
@@ -121,9 +130,22 @@ string CommandProcessor::readCommand() {
     return "";
 }
 
-// Creates a Command and adds it to the list of commands
+// Creates a Command and adds it to the list of commands. The command gets the
+// processor's observers (so its effect is logged later), then the observers are
+// notified so the command itself is written to the log.
 void CommandProcessor::saveCommand(string text) {
-    commands->push_back(new Command(text));
+    Command* command = new Command(text);
+    attachObserversTo(command);
+    commands->push_back(command);
+    notify(this);
+}
+
+// Log line written when a command is saved: the last command of the list
+string CommandProcessor::stringToLog() {
+    if (commands->empty()) {
+        return "CommandProcessor: no command saved yet";
+    }
+    return "Command saved: \"" + commands->back()->getCommand() + "\"";
 }
 
 // Checks if the command is valid in the current state of the game engine.

@@ -226,7 +226,7 @@ void Player::issueOrder(std::string orderType,GameEngine& engine) {
 		std::cout << "enter target territory" << std::endl;
 		std:: cin >> targetTerr;
 		order = new Deploy(this, armiesToDeploy, findTerritory(knownTerritories(), targetTerr));
-		ordersOfPlayer->add(order);
+		ordersOfPlayer->addOrder(order);
 		std::cout << "order of type " << orderType << " created" << std::endl;
 
 	}
@@ -252,7 +252,7 @@ void Player::issueOrder(std::string orderType,GameEngine& engine) {
 				std::cin >> destinationTerr;
 
 				order = new Advance(this, armiesToMove, findTerritory(knownTerritories(), originTerr), findTerritory(knownTerritories(), destinationTerr));
-				ordersOfPlayer->add(order);
+				ordersOfPlayer->addOrder(order);
 				std::cout << "order of type " << orderType << " created" << std::endl;
 
 				break;
@@ -278,7 +278,7 @@ void Player::issueOrder(std::string orderType,GameEngine& engine) {
 				std::cin >> destinationTerr;
 
 				order = new Advance(this, armiesToMove, findTerritory(knownTerritories(), originTerr), findTerritory(knownTerritories(), destinationTerr));
-				ordersOfPlayer->add(order);
+				ordersOfPlayer->addOrder(order);
 				std::cout << "order of type " << orderType << " created" << std::endl;
 
 				break;
@@ -295,7 +295,7 @@ void Player::issueOrder(std::string orderType,GameEngine& engine) {
 		std::cin >> targetTerr;
 
 		order = new Bomb(this, findTerritory(knownTerritories(), targetTerr));
-		ordersOfPlayer->add(order);
+		ordersOfPlayer->addOrder(order);
 		std::cout << "order of type " << orderType << " created" << std::endl;
 	}
 	else if(orderType == "blockade"){
@@ -306,7 +306,7 @@ void Player::issueOrder(std::string orderType,GameEngine& engine) {
 		std::cin >> targetTerr;
 
 		order = new Blockade(this, findTerritory(knownTerritories(), targetTerr));
-		ordersOfPlayer->add(order);
+		ordersOfPlayer->addOrder(order);
 		std::cout << "order of type " << orderType << " created" << std::endl;
 	}
 	else if(orderType == "airlift"){
@@ -326,7 +326,7 @@ void Player::issueOrder(std::string orderType,GameEngine& engine) {
 		std::cin >> targetTerr;
 
 		order = new Airlift(this, armiestoMove, findTerritory(knownTerritories(), originTerr), findTerritory(knownTerritories(), targetTerr));
-		ordersOfPlayer->add(order);
+		ordersOfPlayer->addOrder(order);
 		std::cout << "order of type " << orderType << " created" << std::endl;
 
 	}
@@ -337,7 +337,7 @@ void Player::issueOrder(std::string orderType,GameEngine& engine) {
 		std::cin >> targetPlayer;
 
 		order = new Negotiate(this, findPlayer(targetPlayer));
-		ordersOfPlayer->add(order);
+		ordersOfPlayer->addOrder(order);
 		std::cout << "order of type " << orderType << " created" << std::endl;
 
 	}

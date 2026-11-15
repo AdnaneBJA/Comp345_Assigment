@@ -1,4 +1,5 @@
 // Assignment 2, Part 1: command processor and file command processor adapter.
+// Part 5: Command and CommandProcessor are subjects of the game log observer.
 
 #ifndef COMMANDPROCESSING_H
 #define COMMANDPROCESSING_H
@@ -9,9 +10,11 @@
 #include <vector>
 
 #include "GameEngine.h"
+#include "LoggingObserver.h"
 
 // A command typed by the user (for example "addplayer Alice") and its effect.
-class Command {
+// Saving the effect notifies the observers so the effect is logged.
+class Command : public Subject, public ILoggable {
 public:
     Command(std::string text);
     Command(const Command& other);
@@ -23,6 +26,9 @@ public:
     std::string getCommand() const;
     std::string getEffect() const;
 
+    // Log line: the command and its effect
+    std::string stringToLog();
+
 private:
     std::string* command;
     std::string* effect;
@@ -30,7 +36,9 @@ private:
 
 // Reads commands from the console and saves them in a list of commands.
 // The command processor owns its commands and deletes them.
-class CommandProcessor {
+// Saving a command notifies the observers so the command is logged, and every
+// new command is given the processor's observers so its effect is logged too.
+class CommandProcessor : public Subject, public ILoggable {
 public:
     CommandProcessor();
     CommandProcessor(const CommandProcessor& other);
@@ -41,6 +49,9 @@ public:
     Command* getCommand();
     bool validate(Command* command, GameEngine* engine);
     GameEngine::State nextState(Command* command);
+
+    // Log line: the last command that was saved
+    std::string stringToLog();
 
 protected:
     virtual std::string readCommand();

@@ -33,7 +33,8 @@ Order::Order(Player* issuer) {
 
 // Copy constructor new values, copied from other, deep copy
 // The issuer is shared, the order does not own the player
-Order::Order(const Order& other) {
+// The copy is watched by the same observers
+Order::Order(const Order& other) : Subject(other), ILoggable(other) {
     this->executed = new bool(*other.executed);
     this->effect = new string(*other.effect);
     this->issuer = other.issuer;
@@ -49,9 +50,10 @@ Order::~Order() {
     issuer = NULL;
 }
 
-// Assignment operator copy the values into our own memory
+// Assignment operator copy the values into our own memory, same observers
 Order& Order::operator=(const Order& other) {
     if (this != &other) {
+        Subject::operator=(other);
         *this->executed = *other.executed;
         *this->effect = *other.effect;
         this->issuer = other.issuer;
@@ -93,6 +95,11 @@ ostream& operator<<(ostream& out, const Order& order) {
         out << " | Effect: " << order.getEffect();
     }
     return out;
+}
+
+// Log line written when the order is executed: the order and its effect
+string Order::stringToLog() {
+    return "Order executed: " + getName() + " (" + describe() + ") | Effect: " + getEffect();
 }
 
 // Set the deck used for conquest cards
@@ -273,11 +280,13 @@ bool Deploy::validate() const {
 void Deploy::execute() {
     if (!validate()) {
         setInvalid(invalidReason());
+        notify(this);
         return;
     }
     targetTerritory->setArmies(targetTerritory->getArmies() + *armies);
     setEffect("Deployed " + to_string(*armies) + " armies to " + targetTerritory->getName()
         + ", now " + to_string(targetTerritory->getArmies()) + ".");
+    notify(this);
 }
 
 // Copy of this order
@@ -377,6 +386,7 @@ bool Advance::validate() const {
 void Advance::execute() {
     if (!validate()) {
         setInvalid(invalidReason());
+        notify(this);
         return;
     }
 
@@ -392,6 +402,7 @@ void Advance::execute() {
         targetTerritory->setArmies(targetTerritory->getArmies() + moving);
         setEffect("Moved " + to_string(moving) + " armies from " + sourceTerritory->getName()
             + " to " + targetTerritory->getName() + ".");
+        notify(this);
         return;
     }
     /////
@@ -435,6 +446,7 @@ void Advance::execute() {
         string card = giveConquestCard(getIssuer());
         setEffect(battle + getIssuer()->getName() + " conquered it from " + nameOf(oldOwner)
             + ", " + to_string(attackersLeft) + " armies occupy it." + card);
+        notify(this);
         return;
     }
 
@@ -443,6 +455,7 @@ void Advance::execute() {
     sourceTerritory->setArmies(sourceTerritory->getArmies() + attackersLeft);
     setEffect(battle + "Attack failed, " + to_string(defendersLeft) + " defenders left, "
         + to_string(attackersLeft) + " attackers return.");
+    notify(this);
 }
 
 // Copy of this order
@@ -532,12 +545,14 @@ bool Bomb::validate() const {
 void Bomb::execute() {
     if (!validate()) {
         setInvalid(invalidReason());
+        notify(this);
         return;
     }
     int before = targetTerritory->getArmies();
     targetTerritory->setArmies(before / 2);
     setEffect("Bombed " + targetTerritory->getName() + ", armies went from " + to_string(before)
         + " to " + to_string(targetTerritory->getArmies()) + ".");
+    notify(this);
 }
 
 // Copy of this order
@@ -613,6 +628,7 @@ bool Blockade::validate() const {
 void Blockade::execute() {
     if (!validate()) {
         setInvalid(invalidReason());
+        notify(this);
         return;
     }
     int before = targetTerritory->getArmies();
@@ -620,6 +636,7 @@ void Blockade::execute() {
     transferTerritory(targetTerritory, getNeutralPlayer());
     setEffect("Blockaded " + targetTerritory->getName() + ", armies doubled from " + to_string(before)
         + " to " + to_string(targetTerritory->getArmies()) + ", now owned by the Neutral player.");
+    notify(this);
 }
 
 // Copy of this order
@@ -718,6 +735,7 @@ bool Airlift::validate() const {
 void Airlift::execute() {
     if (!validate()) {
         setInvalid(invalidReason());
+        notify(this);
         return;
     }
     int moving = *armies;
@@ -728,6 +746,7 @@ void Airlift::execute() {
     targetTerritory->setArmies(targetTerritory->getArmies() + moving);
     setEffect("Airlifted " + to_string(moving) + " armies from " + sourceTerritory->getName()
         + " to " + targetTerritory->getName() + ".");
+    notify(this);
 }
 
 // Copy of this order
@@ -804,11 +823,13 @@ bool Negotiate::validate() const {
 void Negotiate::execute() {
     if (!validate()) {
         setInvalid(invalidReason());
+        notify(this);
         return;
     }
     addTruce(getIssuer(), targetPlayer);
     setEffect(getIssuer()->getName() + " and " + targetPlayer->getName()
         + " cannot attack each other for the rest of the turn.");
+    notify(this);
 }
 
 // Copy of this order
@@ -840,8 +861,8 @@ OrdersList::OrdersList() {
     this->orders = new vector<Order*>();
 }
 
-// Copy constructor with a deep copy
-OrdersList::OrdersList(const OrdersList& other) {
+// Copy constructor with a deep copy, same observers
+OrdersList::OrdersList(const OrdersList& other) : Subject(other), ILoggable(other) {
     this->orders = new vector<Order*>();
     for (int i = 0; i < other.size(); i++) {
         orders->push_back(other.get(i)->clone());
@@ -855,9 +876,10 @@ OrdersList::~OrdersList() {
     orders = NULL;
 }
 
-// Assignment operator delete own orders, then deep copy
+// Assignment operator delete own orders, then deep copy, same observers
 OrdersList& OrdersList::operator=(const OrdersList& other) {
     if (this != &other) {
+        Subject::operator=(other);
         deleteAllOrders();
         for (int i = 0; i < other.size(); i++) {
             orders->push_back(other.get(i)->clone());
@@ -866,11 +888,23 @@ OrdersList& OrdersList::operator=(const OrdersList& other) {
     return *this;
 }
 
-// Add at the end
-void OrdersList::add(Order* order) {
+// Add at the end. The order gets the list's observers (so its effect is logged
+// when it is executed), then the observers are notified so the new order is logged.
+void OrdersList::addOrder(Order* order) {
     if (order != NULL) {
+        attachObserversTo(order);
         orders->push_back(order);
+        notify(this);
     }
+}
+
+// Log line written when an order is added: the last order of the list
+string OrdersList::stringToLog() {
+    if (orders->empty()) {
+        return "OrdersList: empty";
+    }
+    Order* last = orders->back();
+    return "Order added to list: " + last->getName() + " (" + last->describe() + ")";
 }
 
 // Delete order at index

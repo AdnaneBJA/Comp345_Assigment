@@ -165,12 +165,12 @@ void testOrderExecution() {
     // 6 A player issues one order of every kind into its list, the engine executes them
     cout << "6. All orders issued by a player and executed by the game engine" << endl;
     OrdersList* aliceOrders = alice->getOrders();
-    aliceOrders->add(new Advance(alice, 2, nunavut, quebec));
-    aliceOrders->add(new Bomb(alice, alberta));
-    aliceOrders->add(new Deploy(alice, 4, manitoba));
-    aliceOrders->add(new Airlift(alice, 1, manitoba, quebec));
-    aliceOrders->add(new Negotiate(alice, charlie));
-    aliceOrders->add(new Blockade(alice, nunavut));
+    aliceOrders->addOrder(new Advance(alice, 2, nunavut, quebec));
+    aliceOrders->addOrder(new Bomb(alice, alberta));
+    aliceOrders->addOrder(new Deploy(alice, 4, manitoba));
+    aliceOrders->addOrder(new Airlift(alice, 1, manitoba, quebec));
+    aliceOrders->addOrder(new Negotiate(alice, charlie));
+    aliceOrders->addOrder(new Blockade(alice, nunavut));
     cout << "  Alice's list as issued" << endl << *aliceOrders;
 
     // Deploy orders first, then the rest in list order

@@ -15,8 +15,8 @@ GameEngine::GameEngine() {
     reinforcementPools = new std::vector<int>();
 }
 
-// Copy constructor
-GameEngine::GameEngine(const GameEngine& other) {
+// Copy constructor, the copy is watched by the same observers
+GameEngine::GameEngine(const GameEngine& other) : Subject(other), ILoggable(other) {
     currentState = new State(*other.currentState);
 
     gameMap = nullptr;
@@ -39,6 +39,7 @@ GameEngine::GameEngine(const GameEngine& other) {
 GameEngine& GameEngine::operator=(const GameEngine& other) {
     if (this != &other) {
         GameEngine copy(other);
+        Subject::operator=(other);
 
         std::swap(currentState, copy.currentState);
         std::swap(gameMap, copy.gameMap);
@@ -152,11 +153,18 @@ bool GameEngine::isFinished() const {
     return *currentState == State::End;
 }
 
-// Moves the engine to the given state and prints the transition.
+// Moves the engine to the given state and prints the transition, then
+// notifies the observers so the new state is written to the log.
 void GameEngine::transition(State newState) {
     const std::string previous = getStateName();
     *currentState = newState;
     std::cout << "Transition: " << previous << " -> " << getStateName() << "\n";
+    notify(this);
+}
+
+// Log line written after a state transition
+std::string GameEngine::stringToLog() {
+    return "Game engine new state: " + getStateName();
 }
 
 // Loadmap from a file and update the state
@@ -216,6 +224,8 @@ bool GameEngine::addPlayer(const std::string& name) {
     }
 
     Player* newPlayer = new Player(name);
+    // the player's orders are logged by the same observers as the engine
+    attachObserversTo(newPlayer->getOrders());
     players->push_back(newPlayer);
     transition(State::PlayersAdded);
     std::cout << "Player added: " << name << "\n";

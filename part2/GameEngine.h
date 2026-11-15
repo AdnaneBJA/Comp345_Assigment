@@ -6,12 +6,14 @@
 #include "Map.h"
 #include "Player.h"
 #include "Cards.h"
+#include "LoggingObserver.h"
 
 // Forward Declaration
 class CommandProcessor;
 
 // GameEngine class implementation
-class GameEngine {
+// Every state transition notifies the observers so the new state is logged
+class GameEngine : public Subject, public ILoggable {
 public:
     // All states that are possible
     enum class State {
@@ -38,6 +40,9 @@ public:
     bool isFinished() const;
     // move the engine to a new state (used with the CommandProcessor)
     void transition(State newState);
+
+    // Log line: the current (new) state of the engine
+    std::string stringToLog();
 
     void startupPhase(CommandProcessor* processor);
     int getReinforcementPool(Player* player) const;

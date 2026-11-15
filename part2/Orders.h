@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+#include "LoggingObserver.h"
+
 // Forward declarations, Player.h includes this file so we cannot include it back
 class Player;
 class Territory;
@@ -13,7 +15,8 @@ class Deck;
 
 // Order abstract parent of every order type
 // An order is issued by a player and validated only when it is executed
-class Order {
+// Executing an order notifies the observers so its effect is logged
+class Order : public Subject, public ILoggable {
 public:
     Order();
     Order(Player* issuer);
@@ -30,6 +33,9 @@ public:
     bool isExecuted() const;
     std::string getEffect() const;
     Player* getIssuer() const;
+
+    // Log line: the order and its effect
+    std::string stringToLog();
 
     friend std::ostream& operator<<(std::ostream& out, const Order& order);
 
@@ -218,18 +224,22 @@ private:
 };
 
 // OrdersList a player's orders for the turn. Owns its orders and deletes them.
-class OrdersList {
+// Adding an order notifies the observers so the new order is logged.
+class OrdersList : public Subject, public ILoggable {
 public:
     OrdersList();
     OrdersList(const OrdersList& other);
     ~OrdersList();
     OrdersList& operator=(const OrdersList& other);
 
-    void add(Order* order);
+    void addOrder(Order* order);
     bool remove(int index);         // false if index doesn't exist
     bool move(int from, int to);    // false if either index doesn't exist
     int size() const;
     Order* get(int index) const;    // NULL if index doesn't exist
+
+    // Log line: the last order added
+    std::string stringToLog();
 
     friend std::ostream& operator<<(std::ostream& out, const OrdersList& list);
 

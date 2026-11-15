@@ -43,11 +43,11 @@ CardType Card::getType() const {
 void Card::play(Player* player, Deck* deck) {
     OrdersList* orders = player->getOrders();
     switch (*type) {
-    case CardType::Bomb:          orders->add(new Bomb()); break;
-    case CardType::Reinforcement: orders->add(new Deploy()); break;
-    case CardType::Blockade:      orders->add(new Blockade()); break;
-    case CardType::Airlift:       orders->add(new Airlift()); break;
-    case CardType::Diplomacy:     orders->add(new Negotiate()); break;
+    case CardType::Bomb:          orders->addOrder(new Bomb()); break;
+    case CardType::Reinforcement: orders->addOrder(new Deploy()); break;
+    case CardType::Blockade:      orders->addOrder(new Blockade()); break;
+    case CardType::Airlift:       orders->addOrder(new Airlift()); break;
+    case CardType::Diplomacy:     orders->addOrder(new Negotiate()); break;
     }
 
     player->getHand()->removeCard(this);

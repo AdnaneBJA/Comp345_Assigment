@@ -1,0 +1,8 @@
+validatemap
+loadmap maps/doesnotexist.map
+loadmap maps/canada.map
+validatemap
+gamestart
+addplayer Alice
+addplayer Bob
+gamestart
