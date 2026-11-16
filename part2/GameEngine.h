@@ -36,7 +36,6 @@ public:
 
     State getState() const;
     std::string getStateName() const;
-    bool processCommand(const std::string& command);
     bool isFinished() const;
     // move the engine to a new state (used with the CommandProcessor)
     void transition(State newState);
@@ -75,7 +74,6 @@ private:
     MapLoader* mapLoader;
     std::vector<int>* reinforcementPools;
     // store the next state in result
-    bool nextState(const std::string& command, State& result) const;
 };
 
 #endif
