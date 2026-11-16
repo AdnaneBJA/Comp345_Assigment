@@ -18,10 +18,10 @@ int main() {
     }
     // Read command from a file
     else if (choice == 2) {
-        FileCommandProcessorAdapter processor("Commands.txt");
+        FileCommandProcessorAdapter processor("EngineCommands.txt");
 
         if (!processor.isFileOpen()) {
-            std::cout << "Could not open Commands.txt\n";
+            std::cout << "Could not open EngineCommands.txt\n";
             return 1;
         }
         engine.startupPhase(&processor);
