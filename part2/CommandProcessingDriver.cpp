@@ -6,7 +6,7 @@
 //
 // Usage:  CommandProcessingDriver -console
 //         CommandProcessingDriver -file <filename>
-//         CommandProcessingDriver                   (uses COMMANDS_FILE)
+//         CommandProcessingDriver                   (menu: console or file)
 //
 
 #include <iostream>
@@ -37,7 +37,7 @@ void testCommandProcessor(CommandProcessor* processor) {
             break;
         }
 
-                if (processor->validate(command, &engine)) {
+        if (processor->validate(command, &engine)) {
             engine.transition(processor->nextState(command));
             command->saveEffect("Accepted, new state: " + engine.getStateName());
         }
@@ -54,18 +54,53 @@ void testCommandProcessor(CommandProcessor* processor) {
     cout << endl << *processor << endl;
 }
 
-// Creates the console or the file command processor from the command line option
+// Asks the user to choose between the console and a file (used when no
+// command line option is given)
+void askForOption(string& option, string& fileName) {
+    string choice;
+    while (true) {
+        cout << endl << "Where should the commands come from?" << endl;
+        cout << "  1) Console" << endl;
+        cout << "  2) File" << endl;
+        cout << "Choice: ";
+        if (!getline(cin, choice)) {
+            option = "";
+            return;
+        }
+        if (choice == "1") {
+            option = "-console";
+            return;
+        }
+        if (choice == "2") {
+            option = "-file";
+            cout << "File name (press Enter for " << COMMANDS_FILE << "): ";
+            string name;
+            getline(cin, name);
+            if (name != "") {
+                fileName = name;
+            }
+            return;
+        }
+        cout << "Invalid choice, enter 1 or 2." << endl;
+    }
+}
+
+// Creates the console or the file command processor. The option comes from
+// the command line (-console or -file <filename>), or from a menu if none is given.
 int main(int argc, char* argv[]) {
     cout << "PART 1: COMMAND PROCESSOR" << endl;
     cout << "Commands: loadmap <mapfile>, validatemap, addplayer <playername>, gamestart, replay, quit" << endl;
 
-    string option = "-file";
+    string option;
     string fileName = COMMANDS_FILE;
     if (argc >= 2) {
         option = argv[1];
+        if (argc >= 3) {
+            fileName = argv[2];
+        }
     }
-    if (argc >= 3) {
-        fileName = argv[2];
+    else {
+        askForOption(option, fileName);
     }
 
     CommandProcessor* processor = nullptr;
