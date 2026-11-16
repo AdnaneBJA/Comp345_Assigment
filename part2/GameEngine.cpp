@@ -18,18 +18,39 @@ GameEngine::GameEngine() {
 // Copy constructor, the copy is watched by the same observers
 GameEngine::GameEngine(const GameEngine& other) : Subject(other), ILoggable(other) {
     currentState = new State(*other.currentState);
-
     gameMap = nullptr;
+	
     if (other.gameMap != nullptr) {
         gameMap = new Map(*other.gameMap);
     }
-
+	
     players = new std::vector<Player*>();
-
     for (Player* player : *other.players) {
         players->push_back(new Player(*player));
     }
 
+	if (gameMap != nullptr) {
+        std::vector<Territory*> originalTerritories = other.gameMap->getTerritories();
+        std::vector<Territory*> copiedTerritories = gameMap->getTerritories();
+
+        for (Player* player : *players) {
+            std::vector<Territory*> oldTerritories = player->getTerritories();
+            for (Territory* territory : oldTerritories) {
+                player->removeTerritory(territory);
+            }
+        }
+
+        for (size_t i = 0; i < originalTerritories.size(); i++) {
+            Player* originalOwner = originalTerritories[i]->getPlayer();
+            copiedTerritories[i]->setPlayer(nullptr);
+            for (size_t j = 0; j < other.players->size(); j++) {
+                if ((*other.players)[j] == originalOwner) {
+                    (*players)[j]->addTerritory(copiedTerritories[i]);
+                    break;
+                }
+            }
+        }
+    }
     deck = new Deck(*other.deck);
     mapLoader = new MapLoader();
     reinforcementPools = new std::vector<int>(*other.reinforcementPools);
@@ -91,62 +112,6 @@ std::string GameEngine::stateName(State state) {
 std::string GameEngine::getStateName() const {
     return stateName(*currentState);
 }
-
-// Implements the labeled edges in the Assignment 1 diagram
-// No actual map loading or creations yet
-/* bool GameEngine::nextState(const std::string& command, State& result) const {
-    switch (*currentState) {
-    case State::Start:
-        if (command == "loadmap") { result = State::MapLoaded; return true; }
-        break;
-    case State::MapLoaded:
-        if (command == "loadmap") { result = State::MapLoaded; return true; }
-        if (command == "validatemap") { result = State::MapValidated; return true; }
-        break;
-    case State::MapValidated:
-        if (command == "addplayer") { result = State::PlayersAdded; return true; }
-        break;
-    case State::PlayersAdded:
-        if (command == "addplayer") { result = State::PlayersAdded; return true; }
-        if (command == "assigncountries") { result = State::AssignReinforcement; return true; }
-        break;
-    case State::AssignReinforcement:
-        if (command == "issueorder") { result = State::IssueOrders; return true; }
-        break;
-    case State::IssueOrders:
-        if (command == "issueorder") { result = State::IssueOrders; return true; }
-        if (command == "endissueorders") { result = State::ExecuteOrders; return true; }
-        break;
-    case State::ExecuteOrders:
-        if (command == "execorder") { result = State::ExecuteOrders; return true; }
-        if (command == "endexecorders") { result = State::AssignReinforcement; return true; }
-        if (command == "win") { result = State::Win; return true; }
-        break;
-    case State::Win:
-        if (command == "play") { result = State::Start; return true; }
-        if (command == "end") { result = State::End; return true; }
-        break;
-    case State::End:
-        break;
-    }
-    return false;
-} */
-
-// Accepts valid commands to update the state and reject invalid commands then print the result, does not change the current state
-/* bool GameEngine::processCommand(const std::string& command) {
-    State destination = *currentState;
-    if (!nextState(command, destination)) {
-        std::cout << "Invalid command '" << command
-                  << "' in state '" << getStateName() << "'. State unchanged.\n";
-        return false;
-    }
-
-    const std::string previous = getStateName();
-    *currentState = destination;
-    std::cout << "Command accepted: " << command << "\n"
-              << "Transition: " << previous << " -> " << getStateName() << "\n";
-    return true;
-} */
 
 // Returns true once the engine reaches the End state.
 bool GameEngine::isFinished() const {
