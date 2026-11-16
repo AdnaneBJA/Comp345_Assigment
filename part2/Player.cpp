@@ -289,16 +289,27 @@ void Player::issueOrder(std::string orderType,GameEngine& engine) {
 	}
 	else if(orderType == "bomb"){
 
+		if (!spendCard(CardType::Bomb, engine.getDeck())) {
+	        std::cout << "You have no bomb card.\n";
+	        return;
+	    }
+
 		std::string targetTerr;
 		std::cout << "select a territory to bomb" << std::endl;
 		printTerritories(attack);
 		std::cin >> targetTerr;
+
 
 		order = new Bomb(this, findTerritory(knownTerritories(), targetTerr));
 		ordersOfPlayer->addOrder(order);
 		std::cout << "order of type " << orderType << " created" << std::endl;
 	}
 	else if(orderType == "blockade"){
+
+		if (!spendCard(CardType::Blockade, engine.getDeck())) {
+	        std::cout << "You have no blockade card.\n";
+	        return;
+	    }
 
 		std::string targetTerr;
 		std::cout << "select a territory to blockade" << std::endl;
@@ -310,6 +321,11 @@ void Player::issueOrder(std::string orderType,GameEngine& engine) {
 		std::cout << "order of type " << orderType << " created" << std::endl;
 	}
 	else if(orderType == "airlift"){
+
+		if (!spendCard(CardType::Airlift, engine.getDeck())) {
+	        std::cout << "You have no airlift card.\n";
+	        return;
+	    }
 
 		int armiestoMove;
 		std::string originTerr;
@@ -331,6 +347,11 @@ void Player::issueOrder(std::string orderType,GameEngine& engine) {
 
 	}
 	else if(orderType == "negotiate"){
+
+		if (!spendCard(CardType::Diplomacy, engine.getDeck())) {
+	        std::cout << "You have no diplomacy card.\n";
+	        return;
+	    }
 
 		std::string targetPlayer;
 		std::cout << "select player to negotiate with" << std::endl;
@@ -409,3 +430,14 @@ void Player::printTerritories(const std::vector<Territory*>& inputList) {
 	}
 }
 
+// Moves the first card of the given type from the hand back to the deck.
+bool Player::spendCard(CardType type, Deck* deck) {
+    for (Card* card : hand->getCards()) {   // getCards() returns a copy, so changing the hand inside is safe
+        if (card->getType() == type) {
+            hand->removeCard(card);         // out of the hand (not deleted)
+            deck->addCard(card);            // back into the deck
+            return true;
+        }
+    }
+    return false;
+}

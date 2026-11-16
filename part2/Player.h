@@ -56,6 +56,10 @@ class Player {
 		// printing a list of territories to the console
 		static void printTerritories(const std::vector<Territory*>& inputList);
 
+		// Moves a card of the given type from the hand back to the deck.
+		// Returns false (and changes nothing) if the player has no such card.
+		bool spendCard(CardType type, Deck* deck);
+
 	// attributes
 	private:
 		std::string* name;
