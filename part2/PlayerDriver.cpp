@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include "Player.h"
+#include "GameEngine.h"
 
 // Creates a territory with the given id, name and armies and adds it to the map
 // (the map owns it and deletes it).
@@ -46,21 +47,33 @@ int main() {
 	connect(france, italy);
 	connect(spain, portugal);
 
-	Deck deck;
+	// issueOrder() needs the game engine: it reads and lowers the player's
+	// reinforcement pool and puts the played cards back in the engine's deck.
+	// The engine owns (and deletes) the players it adds.
+	GameEngine engine;
+	engine.transition(GameEngine::State::MapValidated);
+	engine.addPlayer("Alice");
+	engine.addPlayer("Bob");
+	Player& p1 = *engine.getPlayers()->at(0);
+	Player& p2 = *engine.getPlayers()->at(1);
+	Deck* deck = engine.getDeck();
 
 	std::cout << "=== 1. Player one owns Spain and Portugal ===" << std::endl;
-	Player p1("Alice");
 	p1.addTerritory(spain);
 	p1.addTerritory(portugal);
-	deck.draw(p1.getHand());
-	deck.draw(p1.getHand());
+	engine.setReinforcementPool(&p1, 10);
+	// one card of each type that creates an order, so every card order can be issued
+	p1.getHand()->addCard(new Card(CardType::Bomb));
+	p1.getHand()->addCard(new Card(CardType::Blockade));
+	p1.getHand()->addCard(new Card(CardType::Airlift));
+	p1.getHand()->addCard(new Card(CardType::Diplomacy));
 	std::cout << p1 << std::endl;
+	std::cout << "Reinforcement pool: " << engine.getReinforcementPool(&p1) << std::endl;
 
 	std::cout << "=== 2. Player two owns France and Italy ===" << std::endl;
-	Player p2("Bob");
 	p2.addTerritory(france);
 	p2.addTerritory(italy);
-	deck.draw(p2.getHand());
+	deck->draw(p2.getHand());
 	std::cout << p2 << std::endl;
 
 	std::cout << "=== 3. toDefend() and toAttack() for player one ===" << std::endl;
@@ -71,14 +84,16 @@ int main() {
 	std::cout << std::endl;
 
 	std::cout << "=== 4. issueOrder() adds orders to player one's list ===" << std::endl;
-	p1.issueOrder("deploy");
-	p1.issueOrder("advance");
-	p1.issueOrder("bomb");
-	p1.issueOrder("blockade");
-	p1.issueOrder("airlift");
-	p1.issueOrder("negotiate");
-	p1.issueOrder("surrender");
+	p1.issueOrder("deploy", engine);
+	p1.issueOrder("advance", engine);
+	p1.issueOrder("bomb", engine);
+	p1.issueOrder("blockade", engine);
+	p1.issueOrder("airlift", engine);
+	p1.issueOrder("negotiate", engine);
+	p1.issueOrder("surrender", engine);
 	std::cout << "Orders of player one:" << std::endl << *p1.getOrders() << std::endl;
+	std::cout << "Reinforcement pool left: " << engine.getReinforcementPool(&p1) << std::endl;
+	std::cout << "Hand left (played cards went back to the deck): " << *p1.getHand() << std::endl;
 
 	std::cout << "=== 5. Copy constructor (deep copy of hand and orders) ===" << std::endl;
 	Player pCopy(p1);
@@ -91,7 +106,7 @@ int main() {
 	p3 = p2;
 	std::cout << "Assigned player:" << std::endl << p3 << std::endl;
 
-	// the map deletes the territories and continent, each player deletes its
-	// own hand and orders, and the deck deletes the cards left in it
+	// the copies are deleted first, then the engine (players, their hands and
+	// orders, and the deck), then the map (territories and continent)
 	return 0;
 }

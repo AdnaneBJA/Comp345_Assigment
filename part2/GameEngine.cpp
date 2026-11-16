@@ -192,6 +192,8 @@ bool GameEngine::addPlayer(const std::string& name) {
     // the player's orders are logged by the same observers as the engine
     attachObserversTo(newPlayer->getOrders());
     players->push_back(newPlayer);
+    // empty reinforcement pool, so players and pools always have the same size
+    reinforcementPools->push_back(0);
     transition(State::PlayersAdded);
     std::cout << "Player added: " << name << "\n";
     return true;
