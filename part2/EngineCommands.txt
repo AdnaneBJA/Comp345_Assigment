@@ -1,0 +1,5 @@
+loadmap maps/bigeurope.map
+validatemap
+addplayer A
+addplayer B
+gamestart
