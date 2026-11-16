@@ -7,26 +7,24 @@
 
 #include "LoggingObserver.h"
 
-// Forward declarations, Player.h includes this file so we cannot include it back
+// Forward declarations
 class Player;
 class Territory;
 class Deck;
 
 
-// Order abstract parent of every order type
-// An order is issued by a player and validated only when it is executed
-// Executing an order notifies the observers so its effect is logged
+// Order abstract parent of every order
 class Order : public Subject, public ILoggable {
 public:
     Order();
     Order(Player* issuer);
     Order(const Order& other);
-    virtual ~Order();  // deleting an Order* also runs the subclass destructor
+    virtual ~Order();
     Order& operator=(const Order& other);
 
     virtual bool validate() const = 0;
     virtual void execute() = 0;
-    virtual Order* clone() const = 0;  // copy of the right subclass, used to copy an OrdersList
+    virtual Order* clone() const = 0;
     virtual std::string getName() const = 0;
     virtual std::string describe() const = 0;
 
@@ -34,25 +32,25 @@ public:
     std::string getEffect() const;
     Player* getIssuer() const;
 
-    // Log line: the order and its effect
+    // Log line
     std::string stringToLog();
 
     friend std::ostream& operator<<(std::ostream& out, const Order& order);
 
-    // Game wide state shared by all orders, managed by the game engine
-    static void setDeck(Deck* deck);       // deck used to give a card after a conquest
-    static Player* getNeutralPlayer();     // created the first time it is needed
-    static void endTurn();                 // clears truces and conquests of the turn
-    static void cleanup();                 // frees the neutral player and the shared lists
+    // Shared game state
+    static void setDeck(Deck* deck);
+    static Player* getNeutralPlayer();
+    static void endTurn();
+    static void cleanup();
 
 protected:
     void setEffect(std::string effectText);
     void setInvalid(std::string reason);
 
-    // Why the order is invalid, empty if it is valid
+    // Why invalid, empty if valid
     virtual std::string invalidReason() const = 0;
 
-    // Helpers shared by the subclasses
+    // Helpers
     static bool isAdjacent(Territory* a, Territory* b);
     static bool hasTruce(Player* a, Player* b);
     static void addTruce(Player* a, Player* b);
@@ -64,17 +62,17 @@ protected:
 private:
     bool* executed;
     std::string* effect;
-    Player* issuer;  // not owned, the player who issued the order
+    Player* issuer;
 
-    static Deck* deck;                              // not owned
-    static Player* neutralPlayer;                   // owned, freed by cleanup
-    static std::vector<Player*>* truceFirst;        // truce pairs for this turn
+    static Deck* deck;
+    static Player* neutralPlayer;
+    static std::vector<Player*>* truceFirst;
     static std::vector<Player*>* truceSecond;
-    static std::vector<Player*>* conqueredThisTurn; // players who already got their card
+    static std::vector<Player*>* conqueredThisTurn;
     static void createLists();
 };
 
-// Deploy armies from the reinforcement pool onto one of the player's territories.
+// Deploy armies onto own territory
 class Deploy : public Order {
 public:
     Deploy();
@@ -96,10 +94,10 @@ protected:
 
 private:
     int* armies;
-    Territory* targetTerritory;  // not owned, belongs to the Map
+    Territory* targetTerritory;
 };
 
-// Advance move armies to a neighbouring territory, attack if enemy-owned
+// Advance move to or attack a neighbour
 class Advance : public Order {
 public:
     Advance();
@@ -121,11 +119,11 @@ protected:
 
 private:
     int* armies;
-    Territory* sourceTerritory;  // not owned
-    Territory* targetTerritory;  // not owned
+    Territory* sourceTerritory;
+    Territory* targetTerritory;
 };
 
-// Bomb remove half the armies on an enemy territory next to the player, bomb card.
+// Bomb halve armies on an adjacent enemy territory
 class Bomb : public Order {
 public:
     Bomb();
@@ -146,10 +144,10 @@ protected:
     std::string invalidReason() const;
 
 private:
-    Territory* targetTerritory;  // not owned
+    Territory* targetTerritory;
 };
 
-// Blockade double armies on own territory, then it goes to the Neutral player, blockade card.
+// Blockade double armies, territory goes Neutral
 class Blockade : public Order {
 public:
     Blockade();
@@ -170,10 +168,10 @@ protected:
     std::string invalidReason() const;
 
 private:
-    Territory* targetTerritory;  // not owned
+    Territory* targetTerritory;
 };
 
-// Airlift move armies between any two own territories, airlift card.
+// Airlift move armies between own territories
 class Airlift : public Order {
 public:
     Airlift();
@@ -195,11 +193,11 @@ protected:
 
 private:
     int* armies;
-    Territory* sourceTerritory;  // not owned
-    Territory* targetTerritory;  // not owned
+    Territory* sourceTerritory;
+    Territory* targetTerritory;
 };
 
-// Negotiate no attacks between two players this turn, diplomacy card.
+// Negotiate no attacks between two players this turn
 class Negotiate : public Order {
 public:
     Negotiate();
@@ -220,11 +218,10 @@ protected:
     std::string invalidReason() const;
 
 private:
-    Player* targetPlayer;  // not owned
+    Player* targetPlayer;
 };
 
-// OrdersList a player's orders for the turn. Owns its orders and deletes them.
-// Adding an order notifies the observers so the new order is logged.
+// OrdersList a player's orders
 class OrdersList : public Subject, public ILoggable {
 public:
     OrdersList();
@@ -233,12 +230,12 @@ public:
     OrdersList& operator=(const OrdersList& other);
 
     void addOrder(Order* order);
-    bool remove(int index);         // false if index doesn't exist
-    bool move(int from, int to);    // false if either index doesn't exist
+    bool remove(int index);
+    bool move(int from, int to);
     int size() const;
-    Order* get(int index) const;    // NULL if index doesn't exist
+    Order* get(int index) const;
 
-    // Log line: the last order added
+    // Log line
     std::string stringToLog();
 
     friend std::ostream& operator<<(std::ostream& out, const OrdersList& list);

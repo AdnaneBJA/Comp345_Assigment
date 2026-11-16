@@ -10,38 +10,35 @@ using namespace std;
 
 // Order
 
-// Shared state, starts empty
+// Shared state
 Deck* Order::deck = NULL;
 Player* Order::neutralPlayer = NULL;
 vector<Player*>* Order::truceFirst = NULL;
 vector<Player*>* Order::truceSecond = NULL;
 vector<Player*>* Order::conqueredThisTurn = NULL;
 
-// Default constructor not executed yet, no issuer
+// Default constructor
 Order::Order() {
     this->executed = new bool(false);
     this->effect = new string("");
     this->issuer = NULL;
 }
 
-// Constructor with the player who issued the order
+// Constructor
 Order::Order(Player* issuer) {
     this->executed = new bool(false);
     this->effect = new string("");
     this->issuer = issuer;
 }
 
-// Copy constructor new values, copied from other, deep copy
-// The issuer is shared, the order does not own the player
-// The copy is watched by the same observers
+// Copy constructor
 Order::Order(const Order& other) : Subject(other), ILoggable(other) {
     this->executed = new bool(*other.executed);
     this->effect = new string(*other.effect);
     this->issuer = other.issuer;
 }
 
-// Destructor free members, set to NULL for no dangling pointers
-// The issuer is not deleted, the game owns the players
+// Destructor
 Order::~Order() {
     delete executed;
     executed = NULL;
@@ -50,7 +47,7 @@ Order::~Order() {
     issuer = NULL;
 }
 
-// Assignment operator copy the values into our own memory, same observers
+// Assignment operator
 Order& Order::operator=(const Order& other) {
     if (this != &other) {
         Subject::operator=(other);
@@ -76,19 +73,19 @@ Player* Order::getIssuer() const {
     return issuer;
 }
 
-// Mark as executed + save effect
+// Mark executed, save effect
 void Order::setEffect(string effectText) {
     *this->executed = true;
     *this->effect = effectText;
 }
 
-// Save why the order was rejected, it stays not executed
+// Save why rejected
 void Order::setInvalid(string reason) {
     *this->executed = false;
     *this->effect = "INVALID, " + reason;
 }
 
-// Print order, plus effect if it ran or was rejected
+// Print order and effect
 ostream& operator<<(ostream& out, const Order& order) {
     out << order.getName() << " order: " << order.describe();
     if (order.getEffect() != "") {
@@ -97,17 +94,17 @@ ostream& operator<<(ostream& out, const Order& order) {
     return out;
 }
 
-// Log line written when the order is executed: the order and its effect
+// Log line
 string Order::stringToLog() {
     return "Order executed: " + getName() + " (" + describe() + ") | Effect: " + getEffect();
 }
 
-// Set the deck used for conquest cards
+// Set deck
 void Order::setDeck(Deck* newDeck) {
     deck = newDeck;
 }
 
-// Neutral player, created the first time a blockade needs it
+// Neutral player, created when first needed
 Player* Order::getNeutralPlayer() {
     if (neutralPlayer == NULL) {
         neutralPlayer = new Player("Neutral");
@@ -115,7 +112,7 @@ Player* Order::getNeutralPlayer() {
     return neutralPlayer;
 }
 
-// Create the shared lists if they do not exist yet
+// Create shared lists
 void Order::createLists() {
     if (truceFirst == NULL) {
         truceFirst = new vector<Player*>();
@@ -124,7 +121,7 @@ void Order::createLists() {
     }
 }
 
-// End of turn, truces end and players can earn a new card
+// End of turn, clear truces and conquests
 void Order::endTurn() {
     createLists();
     truceFirst->clear();
@@ -132,7 +129,7 @@ void Order::endTurn() {
     conqueredThisTurn->clear();
 }
 
-// Free the neutral player and the shared lists, call once at the end of the game
+// Free shared state at end of game
 void Order::cleanup() {
     delete neutralPlayer;
     neutralPlayer = NULL;
@@ -145,7 +142,7 @@ void Order::cleanup() {
     deck = NULL;
 }
 
-// True if b is a neighbour of a
+// True if b neighbours a
 bool Order::isAdjacent(Territory* a, Territory* b) {
     vector<Territory*> neighbors = a->getNeighbors();
     for (int i = 0; i < static_cast<int>(neighbors.size()); i++) {
@@ -156,7 +153,7 @@ bool Order::isAdjacent(Territory* a, Territory* b) {
     return false;
 }
 
-// True if a and b negotiated this turn, in either direction
+// True if a and b negotiated this turn
 bool Order::hasTruce(Player* a, Player* b) {
     createLists();
     for (int i = 0; i < static_cast<int>(truceFirst->size()); i++) {
@@ -169,14 +166,14 @@ bool Order::hasTruce(Player* a, Player* b) {
     return false;
 }
 
-// Record a truce between a and b for this turn
+// Record a truce
 void Order::addTruce(Player* a, Player* b) {
     createLists();
     truceFirst->push_back(a);
     truceSecond->push_back(b);
 }
 
-// Change the owner of a territory in both players' lists
+// Change territory owner
 void Order::transferTerritory(Territory* territory, Player* newOwner) {
     Player* oldOwner = territory->getPlayer();
     if (oldOwner != NULL) {
@@ -185,7 +182,7 @@ void Order::transferTerritory(Territory* territory, Player* newOwner) {
     newOwner->addTerritory(territory);
 }
 
-// Give one card to a player who conquered, at most one per turn
+// One card per turn for a conquest
 string Order::giveConquestCard(Player* player) {
     createLists();
     for (int i = 0; i < static_cast<int>(conqueredThisTurn->size()); i++) {
@@ -204,7 +201,7 @@ string Order::giveConquestCard(Player* player) {
     return " " + player->getName() + " receives a card.";
 }
 
-// Territory name or a placeholder if missing
+// Territory name or placeholder
 string Order::nameOf(Territory* territory) {
     if (territory == NULL) {
         return "unknown territory";
@@ -212,7 +209,7 @@ string Order::nameOf(Territory* territory) {
     return territory->getName();
 }
 
-// Player name or a placeholder if missing
+// Player name or placeholder
 string Order::nameOf(Player* player) {
     if (player == NULL) {
         return "unknown player";
@@ -220,9 +217,9 @@ string Order::nameOf(Player* player) {
     return player->getName();
 }
 
-//Deploy
+// Deploy
 
-// Default constructor invalid order
+// Default constructor
 Deploy::Deploy() {
     this->armies = new int(0);
     this->targetTerritory = NULL;
@@ -234,13 +231,13 @@ Deploy::Deploy(Player* issuer, int armies, Territory* targetTerritory) : Order(i
     this->targetTerritory = targetTerritory;
 }
 
-// Copy constructor, the territory is shared not copied
+// Copy constructor
 Deploy::Deploy(const Deploy& other) : Order(other) {
     this->armies = new int(*other.armies);
     this->targetTerritory = other.targetTerritory;
 }
 
-// Destructor free members, territory belongs to the Map so it is not deleted
+// Destructor
 Deploy::~Deploy() {
     delete armies;
     armies = NULL;
@@ -257,7 +254,7 @@ Deploy& Deploy::operator=(const Deploy& other) {
     return *this;
 }
 
-// Rules, target must belong to the issuer
+// Rules, own target
 string Deploy::invalidReason() const {
     if (getIssuer() == NULL || targetTerritory == NULL) {
         return "missing player or territory.";
@@ -271,12 +268,12 @@ string Deploy::invalidReason() const {
     return "";
 }
 
-// Valid if no rule is broken
+// Valid if no rule broken
 bool Deploy::validate() const {
     return invalidReason() == "";
 }
 
-// Validate, then add the armies to the territory
+// Add armies
 void Deploy::execute() {
     if (!validate()) {
         setInvalid(invalidReason());
@@ -304,7 +301,7 @@ string Deploy::describe() const {
     return nameOf(getIssuer()) + " deploys " + to_string(*armies) + " armies to " + nameOf(targetTerritory);
 }
 
-// Print, same as Order
+// Print
 ostream& operator<<(ostream& out, const Deploy& order) {
     const Order& asOrder = order;
     out << asOrder;
@@ -313,7 +310,7 @@ ostream& operator<<(ostream& out, const Deploy& order) {
 
 // Advance
 
-// Default constructor invalid order
+// Default constructor
 Advance::Advance() {
     this->armies = new int(0);
     this->sourceTerritory = NULL;
@@ -327,14 +324,14 @@ Advance::Advance(Player* issuer, int armies, Territory* sourceTerritory, Territo
     this->targetTerritory = targetTerritory;
 }
 
-// Copy constructor, territories are shared not copied
+// Copy constructor
 Advance::Advance(const Advance& other) : Order(other) {
     this->armies = new int(*other.armies);
     this->sourceTerritory = other.sourceTerritory;
     this->targetTerritory = other.targetTerritory;
 }
 
-// Destructor free members, territories belong to the Map so they are not deleted
+// Destructor
 Advance::~Advance() {
     delete armies;
     armies = NULL;
@@ -353,7 +350,7 @@ Advance& Advance::operator=(const Advance& other) {
     return *this;
 }
 
-// Rules, own source, adjacent target, no truce with the target's owner
+// Rules, own source, adjacent target, no truce
 string Advance::invalidReason() const {
     if (getIssuer() == NULL || sourceTerritory == NULL || targetTerritory == NULL) {
         return "missing player or territory.";
@@ -377,12 +374,12 @@ string Advance::invalidReason() const {
     return "";
 }
 
-// Valid if no rule is broken
+// Valid if no rule broken
 bool Advance::validate() const {
     return invalidReason() == "";
 }
 
-// Validate, then move armies or simulate a battle
+// Move armies or battle
 void Advance::execute() {
     if (!validate()) {
         setInvalid(invalidReason());
@@ -390,13 +387,13 @@ void Advance::execute() {
         return;
     }
 
-    // Can only send what the source still has
+    // Cap to available armies
     int moving = *armies;
     if (moving > sourceTerritory->getArmies()) {
         moving = sourceTerritory->getArmies();
     }
 
-    // Own territory, simple move
+    // Own territory, move
     if (targetTerritory->getPlayer() == getIssuer()) {
         sourceTerritory->setArmies(sourceTerritory->getArmies() - moving);
         targetTerritory->setArmies(targetTerritory->getArmies() + moving);
@@ -405,20 +402,19 @@ void Advance::execute() {
         notify(this);
         return;
     }
-    /////
 
     // Enemy territory, battle
     int defenders = targetTerritory->getArmies();
     sourceTerritory->setArmies(sourceTerritory->getArmies() - moving);
 
-    // Each attacker has 60 percent chance to kill a defender
+    // Attackers kill with 60 percent chance
     int defendersKilled = 0;
     for (int i = 0; i < moving; i++) {
         if (rand() % 100 < 60) {
             defendersKilled++;
         }
     }
-    // Each defender has 70 percent chance to kill an attacker
+    // Defenders kill with 70 percent chance
     int attackersKilled = 0;
     for (int i = 0; i < defenders; i++) {
         if (rand() % 100 < 70) {
@@ -438,7 +434,7 @@ void Advance::execute() {
     string battle = "Attacked " + targetTerritory->getName() + " from " + sourceTerritory->getName()
         + " with " + to_string(moving) + " vs " + to_string(defenders) + ". ";
 
-    // Conquered, survivors occupy the territory
+    // Conquered
     if (defendersLeft == 0 && attackersLeft > 0) {
         Player* oldOwner = targetTerritory->getPlayer();
         transferTerritory(targetTerritory, getIssuer());
@@ -450,7 +446,7 @@ void Advance::execute() {
         return;
     }
 
-    // Not conquered, survivors go back to the source
+    // Failed, survivors return
     targetTerritory->setArmies(defendersLeft);
     sourceTerritory->setArmies(sourceTerritory->getArmies() + attackersLeft);
     setEffect(battle + "Attack failed, " + to_string(defendersLeft) + " defenders left, "
@@ -474,7 +470,7 @@ string Advance::describe() const {
         + nameOf(sourceTerritory) + " to " + nameOf(targetTerritory);
 }
 
-// Print same as order
+// Print
 ostream& operator<<(ostream& out, const Advance& order) {
     const Order& asOrder = order;
     out << asOrder;
@@ -483,7 +479,7 @@ ostream& operator<<(ostream& out, const Advance& order) {
 
 // Bomb
 
-// Default constructor invalid order
+// Default constructor
 Bomb::Bomb() {
     this->targetTerritory = NULL;
 }
@@ -493,12 +489,12 @@ Bomb::Bomb(Player* issuer, Territory* targetTerritory) : Order(issuer) {
     this->targetTerritory = targetTerritory;
 }
 
-// Copy constructor, territory shared
+// Copy constructor
 Bomb::Bomb(const Bomb& other) : Order(other) {
     this->targetTerritory = other.targetTerritory;
 }
 
-// Destructor, territory belongs to the Map so it is not deleted
+// Destructor
 Bomb::~Bomb() {
     targetTerritory = NULL;
 }
@@ -512,7 +508,7 @@ Bomb& Bomb::operator=(const Bomb& other) {
     return *this;
 }
 
-// Rules, enemy target adjacent to one of the issuer's territories, no truce
+// Rules, adjacent enemy target, no truce
 string Bomb::invalidReason() const {
     if (getIssuer() == NULL || targetTerritory == NULL) {
         return "missing player or territory.";
@@ -536,12 +532,12 @@ string Bomb::invalidReason() const {
     return "";
 }
 
-// Valid if no rule is broken
+// Valid if no rule broken
 bool Bomb::validate() const {
     return invalidReason() == "";
 }
 
-// Validate, then remove half the armies
+// Halve armies
 void Bomb::execute() {
     if (!validate()) {
         setInvalid(invalidReason());
@@ -570,16 +566,16 @@ string Bomb::describe() const {
     return nameOf(getIssuer()) + " bombs " + nameOf(targetTerritory);
 }
 
-// Print same as Order
+// Print
 ostream& operator<<(ostream& out, const Bomb& order) {
     const Order& asOrder = order;
     out << asOrder;
     return out;
 }
 
-//Blockade
+// Blockade
 
-// Default constructor invalid order
+// Default constructor
 Blockade::Blockade() {
     this->targetTerritory = NULL;
 }
@@ -589,12 +585,12 @@ Blockade::Blockade(Player* issuer, Territory* targetTerritory) : Order(issuer) {
     this->targetTerritory = targetTerritory;
 }
 
-// Copy constructor, territory shared
+// Copy constructor
 Blockade::Blockade(const Blockade& other) : Order(other) {
     this->targetTerritory = other.targetTerritory;
 }
 
-// Destructor, territory belongs to the Map so it is not deleted
+// Destructor
 Blockade::~Blockade() {
     targetTerritory = NULL;
 }
@@ -608,7 +604,7 @@ Blockade& Blockade::operator=(const Blockade& other) {
     return *this;
 }
 
-// Rules, target must belong to the issuer
+// Rules, own target
 string Blockade::invalidReason() const {
     if (getIssuer() == NULL || targetTerritory == NULL) {
         return "missing player or territory.";
@@ -619,12 +615,12 @@ string Blockade::invalidReason() const {
     return "";
 }
 
-// Valid if no rule is broken
+// Valid if no rule broken
 bool Blockade::validate() const {
     return invalidReason() == "";
 }
 
-// Validate, then double the armies and give the territory to the Neutral player
+// Double armies, give to Neutral
 void Blockade::execute() {
     if (!validate()) {
         setInvalid(invalidReason());
@@ -654,7 +650,7 @@ string Blockade::describe() const {
     return nameOf(getIssuer()) + " blockades " + nameOf(targetTerritory);
 }
 
-// Print same as Order
+// Print
 ostream& operator<<(ostream& out, const Blockade& order) {
     const Order& asOrder = order;
     out << asOrder;
@@ -663,7 +659,7 @@ ostream& operator<<(ostream& out, const Blockade& order) {
 
 // Airlift
 
-// Default constructor invalid order
+// Default constructor
 Airlift::Airlift() {
     this->armies = new int(0);
     this->sourceTerritory = NULL;
@@ -677,14 +673,14 @@ Airlift::Airlift(Player* issuer, int armies, Territory* sourceTerritory, Territo
     this->targetTerritory = targetTerritory;
 }
 
-// Copy constructor, territories shared
+// Copy constructor
 Airlift::Airlift(const Airlift& other) : Order(other) {
     this->armies = new int(*other.armies);
     this->sourceTerritory = other.sourceTerritory;
     this->targetTerritory = other.targetTerritory;
 }
 
-// Destructor free members, territories belong to the Map so they are not deleted
+// Destructor
 Airlift::~Airlift() {
     delete armies;
     armies = NULL;
@@ -703,7 +699,7 @@ Airlift& Airlift::operator=(const Airlift& other) {
     return *this;
 }
 
-// Rules, both territories must belong to the issuer, no adjacency needed
+// Rules, own source and target
 string Airlift::invalidReason() const {
     if (getIssuer() == NULL || sourceTerritory == NULL || targetTerritory == NULL) {
         return "missing player or territory.";
@@ -726,12 +722,12 @@ string Airlift::invalidReason() const {
     return "";
 }
 
-// Valid if no rule is broken
+// Valid if no rule broken
 bool Airlift::validate() const {
     return invalidReason() == "";
 }
 
-// Validate, then move the armies
+// Move armies
 void Airlift::execute() {
     if (!validate()) {
         setInvalid(invalidReason());
@@ -765,7 +761,7 @@ string Airlift::describe() const {
         + nameOf(sourceTerritory) + " to " + nameOf(targetTerritory);
 }
 
-// Print same as Order
+// Print
 ostream& operator<<(ostream& out, const Airlift& order) {
     const Order& asOrder = order;
     out << asOrder;
@@ -774,7 +770,7 @@ ostream& operator<<(ostream& out, const Airlift& order) {
 
 // Negotiate
 
-// Default constructor invalid order
+// Default constructor
 Negotiate::Negotiate() {
     this->targetPlayer = NULL;
 }
@@ -784,12 +780,12 @@ Negotiate::Negotiate(Player* issuer, Player* targetPlayer) : Order(issuer) {
     this->targetPlayer = targetPlayer;
 }
 
-// Copy constructor, player shared
+// Copy constructor
 Negotiate::Negotiate(const Negotiate& other) : Order(other) {
     this->targetPlayer = other.targetPlayer;
 }
 
-// Destructor, the player belongs to the game so it is not deleted
+// Destructor
 Negotiate::~Negotiate() {
     targetPlayer = NULL;
 }
@@ -803,7 +799,7 @@ Negotiate& Negotiate::operator=(const Negotiate& other) {
     return *this;
 }
 
-// Rules, target must be another player
+// Rules, another player
 string Negotiate::invalidReason() const {
     if (getIssuer() == NULL || targetPlayer == NULL) {
         return "missing player.";
@@ -814,12 +810,12 @@ string Negotiate::invalidReason() const {
     return "";
 }
 
-// Valid if no rule is broken
+// Valid if no rule broken
 bool Negotiate::validate() const {
     return invalidReason() == "";
 }
 
-// Validate, then block attacks between the two players for this turn
+// Block attacks this turn
 void Negotiate::execute() {
     if (!validate()) {
         setInvalid(invalidReason());
@@ -847,7 +843,7 @@ string Negotiate::describe() const {
     return nameOf(getIssuer()) + " negotiates with " + nameOf(targetPlayer);
 }
 
-// Print same as order
+// Print
 ostream& operator<<(ostream& out, const Negotiate& order) {
     const Order& asOrder = order;
     out << asOrder;
@@ -856,12 +852,12 @@ ostream& operator<<(ostream& out, const Negotiate& order) {
 
 // OrdersList
 
-// Default constructor with empty list
+// Default constructor
 OrdersList::OrdersList() {
     this->orders = new vector<Order*>();
 }
 
-// Copy constructor with a deep copy, same observers
+// Copy constructor, deep copy
 OrdersList::OrdersList(const OrdersList& other) : Subject(other), ILoggable(other) {
     this->orders = new vector<Order*>();
     for (int i = 0; i < other.size(); i++) {
@@ -869,14 +865,14 @@ OrdersList::OrdersList(const OrdersList& other) : Subject(other), ILoggable(othe
     }
 }
 
-// Destructor delete orders, then the vector
+// Destructor
 OrdersList::~OrdersList() {
     deleteAllOrders();
     delete orders;
     orders = NULL;
 }
 
-// Assignment operator delete own orders, then deep copy, same observers
+// Assignment operator, deep copy
 OrdersList& OrdersList::operator=(const OrdersList& other) {
     if (this != &other) {
         Subject::operator=(other);
@@ -888,8 +884,7 @@ OrdersList& OrdersList::operator=(const OrdersList& other) {
     return *this;
 }
 
-// Add at the end. The order gets the list's observers (so its effect is logged
-// when it is executed), then the observers are notified so the new order is logged.
+// Add order, share observers, notify
 void OrdersList::addOrder(Order* order) {
     if (order != NULL) {
         attachObserversTo(order);
@@ -898,7 +893,7 @@ void OrdersList::addOrder(Order* order) {
     }
 }
 
-// Log line written when an order is added: the last order of the list
+// Log line
 string OrdersList::stringToLog() {
     if (orders->empty()) {
         return "OrdersList: empty";
@@ -912,12 +907,12 @@ bool OrdersList::remove(int index) {
     if (!isValidIndex(index)) {
         return false;
     }
-    delete orders->at(index);                 // free the order
-    orders->erase(orders->begin() + index);   // remove its slot
+    delete orders->at(index);
+    orders->erase(orders->begin() + index);
     return true;
 }
 
-// Move order from one index to another
+// Move order
 bool OrdersList::move(int from, int to) {
     if (!isValidIndex(from) || !isValidIndex(to)) {
         return false;
@@ -933,7 +928,7 @@ int OrdersList::size() const {
     return static_cast<int>(orders->size());
 }
 
-// Order at index, or NULL
+// Order at index or NULL
 Order* OrdersList::get(int index) const {
     if (!isValidIndex(index)) {
         return NULL;
@@ -941,7 +936,7 @@ Order* OrdersList::get(int index) const {
     return orders->at(index);
 }
 
-// Delete every order, empty the vector
+// Delete all orders
 void OrdersList::deleteAllOrders() {
     for (int i = 0; i < size(); i++) {
         delete orders->at(i);
@@ -957,7 +952,7 @@ bool OrdersList::isValidIndex(int index) const {
     return true;
 }
 
-// Print each order on its own line
+// Print list
 ostream& operator<<(ostream& out, const OrdersList& list) {
     if (list.size() == 0) {
         out << "  (empty)" << endl;

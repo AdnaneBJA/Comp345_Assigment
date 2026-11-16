@@ -2,6 +2,7 @@
 #include "Player.h"
 #include "Map.h"
 #include "Cards.h"
+#include "GameEngine.h"
 
 #include <iostream>
 #include <cstdlib>
@@ -9,7 +10,7 @@
 
 using namespace std;
 
-// Create a territory with armies and give it to a player
+// Create a territory for a player
 Territory* makeTerritory(string name, int armies, Player* owner) {
     Territory* territory = new Territory();
     territory->setTerritoryName(name);
@@ -18,13 +19,13 @@ Territory* makeTerritory(string name, int armies, Player* owner) {
     return territory;
 }
 
-// Make two territories neighbours of each other
+// Connect two territories
 void connect(Territory* a, Territory* b) {
     a->addNeighbor(b);
     b->addNeighbor(a);
 }
 
-// Print every territory with its owner and armies
+// Print map
 void showMap(const vector<Territory*>& territories) {
     for (int i = 0; i < static_cast<int>(territories.size()); i++) {
         Territory* territory = territories[i];
@@ -33,24 +34,24 @@ void showMap(const vector<Territory*>& territories) {
             owner = territory->getPlayer()->getName();
         }
         cout << "    " << territory->getName() << " owned by " << owner
-             << ", armies " << territory->getArmies() << endl;
+            << ", armies " << territory->getArmies() << endl;
     }
     cout << endl;
 }
 
-// Execute an order and print it with its effect
+// Execute and print an order
 void run(Order& order) {
     order.execute();
     cout << "  " << order << endl;
 }
 
-// Demo for Part 4, order execution with the real game rules
+// Part 4 demo
 void testOrderExecution() {
     srand(static_cast<unsigned int>(time(NULL)));
 
-    cout << "===== Part 4: Order execution =====" << endl << endl;
+    cout << "----- Part 4: Order execution -----" << endl << endl;
 
-    // Players, deck and a small map
+    // Setup
     Player* alice = new Player("Alice");
     Player* bob = new Player("Bob");
     Player* charlie = new Player("Charlie");
@@ -92,7 +93,7 @@ void testOrderExecution() {
     cout << "  Manitoba-Nunavut, Manitoba-Alberta, Alberta-BritishColumbia" << endl;
     showMap(allTerritories);
 
-    // 1 Every order is validated when executed, invalid ones do nothing
+    // 1 Validation
     cout << "1. Invalid orders are rejected when executed" << endl;
     Deploy badDeploy(alice, 5, manitoba);
     run(badDeploy);
@@ -113,7 +114,7 @@ void testOrderExecution() {
     cout << "  Map unchanged" << endl;
     showMap(allTerritories);
 
-    // Valid orders of each simple kind
+    // Valid orders
     cout << "   Valid orders change the map" << endl;
     Deploy deploy(alice, 5, quebec);
     run(deploy);
@@ -125,7 +126,7 @@ void testOrderExecution() {
     run(bomb);
     showMap(allTerritories);
 
-    // 2 and 3 Conquest transfers ownership and gives one card per turn
+    // 2 and 3 Conquest and card
     cout << "2. Advance into an enemy territory, the winner takes it" << endl;
     cout << "3. A card is given for a conquest, only one per turn" << endl;
     cout << "  Alice has " << alice->getHand()->getCards().size() << " cards" << endl;
@@ -141,7 +142,7 @@ void testOrderExecution() {
     cout << "  BritishColumbia keeps its owner after a failed attack" << endl;
     showMap(allTerritories);
 
-    // 4 Negotiate blocks attacks between the two players for the turn
+    // 4 Negotiate
     cout << "4. Negotiate prevents attacks between two players" << endl;
     Negotiate truce(bob, alice);
     run(truce);
@@ -155,14 +156,14 @@ void testOrderExecution() {
     run(allowedAttack);
     cout << endl;
 
-    // 5 Blockade doubles armies and gives the territory to the Neutral player
+    // 5 Blockade
     cout << "5. Blockade transfers ownership to the Neutral player" << endl;
     Blockade blockade(alice, ontario);
     run(blockade);
     cout << "  Neutral player owns " << Order::getNeutralPlayer()->getTerritories().size() << " territory" << endl;
     showMap(allTerritories);
 
-    // 6 A player issues one order of every kind into its list, the engine executes them
+    // 6 Issue and execute all orders
     cout << "6. All orders issued by a player and executed by the game engine" << endl;
     OrdersList* aliceOrders = alice->getOrders();
     aliceOrders->addOrder(new Advance(alice, 2, nunavut, quebec));
@@ -173,7 +174,7 @@ void testOrderExecution() {
     aliceOrders->addOrder(new Blockade(alice, nunavut));
     cout << "  Alice's list as issued" << endl << *aliceOrders;
 
-    // Deploy orders first, then the rest in list order
+    // Deploys first
     cout << "  Execution, deploys first" << endl;
     for (int i = 0; i < aliceOrders->size(); i++) {
         if (aliceOrders->get(i)->getName() == "Deploy") {
@@ -191,7 +192,7 @@ void testOrderExecution() {
     cout << endl << "Final map" << endl;
     showMap(allTerritories);
 
-    // Free everything, territories belong to this demo, the Map in the real game
+    // Cleanup
     delete alice;
     delete bob;
     delete charlie;
@@ -199,11 +200,82 @@ void testOrderExecution() {
         delete allTerritories[i];
     }
     delete deck;
-    Order::cleanup();
+}
+
+// 7 Orders issued by the players of a real game and executed by the GameEngine
+void testOrdersWithGameEngine() {
+    cout << "7. Orders issued by players and executed by the real GameEngine" << endl;
+
+    // New turn so nothing from the earlier demo carries over
+    Order::endTurn();
+
+    GameEngine engine;
+    if (!engine.loadMap("maps/canada.map") || !engine.validateMap()) {
+        cout << "  Could not load maps/canada.map, section skipped" << endl;
+        return;
+    }
+    engine.addPlayer("Alice");
+    engine.addPlayer("Bob");
+    if (!engine.gameStart()) {
+        cout << "  Could not start the game, section skipped" << endl;
+        return;
+    }
+
+    vector<Player*> players = *engine.getPlayers();
+    Player* first = players[0];
+    Player* second = players[1];
+
+    // A territory of the first player next to an enemy, and another territory of its own
+    Territory* border = NULL;
+    Territory* enemy = NULL;
+    vector<Territory*> owned = first->getTerritories();
+    for (int i = 0; i < static_cast<int>(owned.size()) && border == NULL; i++) {
+        vector<Territory*> neighbors = owned[i]->getNeighbors();
+        for (int j = 0; j < static_cast<int>(neighbors.size()); j++) {
+            if (neighbors[j]->getPlayer() != first) {
+                border = owned[i];
+                enemy = neighbors[j];
+                break;
+            }
+        }
+    }
+    if (border == NULL || owned.size() < 2) {
+        cout << "  No border territory found, section skipped" << endl;
+        return;
+    }
+    Territory* other = owned[0];
+    if (other == border) {
+        other = owned[1];
+    }
+
+    // Issued in mixed order, the engine runs the deploy first
+    first->getOrders()->addOrder(new Advance(first, 5, border, enemy));
+    first->getOrders()->addOrder(new Deploy(first, 10, border));
+    first->getOrders()->addOrder(new Bomb(first, enemy));
+    first->getOrders()->addOrder(new Airlift(first, 2, border, other));
+    first->getOrders()->addOrder(new Blockade(first, other));
+    second->getOrders()->addOrder(new Negotiate(second, first));
+
+    cout << endl << "  " << first->getName() << "'s orders" << endl << *first->getOrders();
+    cout << "  " << second->getName() << "'s orders" << endl << *second->getOrders() << endl;
+
+    engine.transition(GameEngine::State::ExecuteOrders);
+    engine.executeOrdersPhase();
+
+    cout << endl << "  After execution" << endl;
+    cout << "    " << border->getName() << " owned by " << border->getPlayer()->getName()
+        << ", armies " << border->getArmies() << endl;
+    cout << "    " << enemy->getName() << " owned by " << enemy->getPlayer()->getName()
+        << ", armies " << enemy->getArmies() << endl;
+    cout << "    " << other->getName() << " owned by " << other->getPlayer()->getName()
+        << ", armies " << other->getArmies() << endl;
 }
 
 // Entry point
 int main() {
     testOrderExecution();
+    cout << endl;
+    testOrdersWithGameEngine();
+    Order::cleanup();
     return 0;
 }
