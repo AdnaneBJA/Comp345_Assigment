@@ -73,7 +73,6 @@ private:
     Deck* deck;
     MapLoader* mapLoader;
     std::vector<int>* reinforcementPools;
-    // store the next state in result
 };
 
 #endif
